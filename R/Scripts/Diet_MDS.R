@@ -1,13 +1,6 @@
 # setwd and load packages
 setwd("~/Dropbox/Doc/Data/diets")
 
-# install and load packages
-if (!require('MASS')) install.packages('MASS'); library('MASS')
-if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
-if (!require('magrittr')) install.packages('magrittr'); library('magrittr')
-if (!require('ade4')) install.packages('ade4'); library('ade4')
-if (!require('rgl')) install.packages('rgl'); library('rgl')
-
 # reading diet table
 data.diet = read.csv("TrophicGuild.csv")
 
