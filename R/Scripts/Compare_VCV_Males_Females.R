@@ -1,0 +1,156 @@
+# compare the vcv between males and females from the phylogeny
+# I need at least 40 males and 40 females for a species to be
+# acceptable to comparison
+if(!require(stringr)){install.packages("stringr"); library(stringr)}
+if(!require(ape)){install.packages("ape"); library(ape)}
+if(!require(evolqg)){install.packages("evolqg"); library(evolqg)}
+if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
+
+##### Catarrhini ######
+# read raw data
+msrs_catarrhini = read.csv(file = "~/Dropbox/Doc/Data/primates_measures/medidas_catarrhini.csv", dec = ",", sep = ",")
+
+# check names and remove doubts
+msrs_catarrhini$SEX[which(msrs_catarrhini$SEX == "?female")] = "female"
+msrs_catarrhini$SEX[which(msrs_catarrhini$SEX == "?male")] = "male"
+
+# remove uncertain sex
+msrs_catarrhini$SEX[msrs_catarrhini$SEX == "0"] = NA
+msrs_catarrhini$SEX[msrs_catarrhini$SEX == ""] = NA
+msrs_catarrhini$SEX[msrs_catarrhini$SEX == "sexo"] = NA
+
+msrs_catarrhini = msrs_catarrhini[complete.cases(msrs_catarrhini$SEX), ]
+
+#Load 
+align = read.csv("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_dimorphism_extant.csv")
+
+#Load and plot the phylogeny
+# read and plot phylo tree
+filename = "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
+tree = ape::read.nexus(filename)
+species = align$matings.especies
+tree = drop.tip(tree, setdiff(tree$tip.label, species))
+
+cov.matrices_m = list()
+cov.matrices_f = list()
+for(i in 1:length(tree$tip.label[1:38])){
+  #
+  genus = str_split_1(tree$tip.label[[i]], "_")[1]
+  sp = str_split_1(tree$tip.label[[i]], "_")[2]
+  
+  #
+  species_subset = msrs_catarrhini[which(msrs_catarrhini$GENUS == genus), ]
+  species_subset = species_subset[which(species_subset$SPECIES == sp), ]
+  
+  # separate M and F
+  sub_sexes_m = species_subset[which(species_subset$SEX == "male"), ]
+  sub_sexes_f = species_subset[which(species_subset$SEX == "female"), ]
+  
+  if (nrow(sub_sexes_m) < 40 || nrow(sub_sexes_f) < 40) {
+    next
+  }
+  
+  cov.matrices_m[[i]] = cov(as.matrix(sub_sexes_m[,49:87]))
+  cov.matrices_f[[i]] = cov(as.matrix(sub_sexes_f[,49:87]))
+}
+
+species = tree$tip.label[1:38]
+catarrhini = list(cov.matrices_f, cov.matrices_m)
+
+##### Platyrrhini ######
+msrs = read.csv(file = "~/Dropbox/Doc/Data/primates_measures/medidas_platyrrhini.csv", dec = ".", sep = ",")
+
+#
+index = which(apply(msrs[, 23:61], 1, function(x) any(is.na(x) | (x == "" & !is.numeric(x)))))
+msrs_platyrrhini = msrs[-index,]
+
+# remove uncertain sex
+msrs_platyrrhini$SEX4.[msrs_platyrrhini$SEX4. == ""] = NA
+msrs_platyrrhini$SEX4.[msrs_platyrrhini$SEX4. == " "] = NA
+
+msrs_platyrrhini = msrs_platyrrhini[complete.cases(msrs_platyrrhini$SEX4.), ]
+
+align = read.csv("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_dimorphism_extant.csv")
+
+#Load and plot the phylogeny
+# read and plot phylo tree
+filename = "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
+tree = ape::read.nexus(filename)
+species = align$matings.especies
+tree = drop.tip(tree, setdiff(tree$tip.label, species))
+
+cov.matrices_m = list()
+cov.matrices_f = list()
+for(i in 39:62){
+  # choose species i
+  genus = str_split_1(tree$tip.label[[i]], "_")[1]
+  sp = str_split_1(tree$tip.label[[i]], "_")[2]
+  
+  species_subset = msrs_platyrrhini[which(msrs_platyrrhini$GENUS. == genus), ]
+  species_subset = species_subset[which(species_subset$SPECIES. == sp), ]
+  
+  # separate M and F
+  sub_sexes_m = species_subset[which(species_subset$SEX4. == "M"), ]
+  sub_sexes_f = species_subset[which(species_subset$SEX4. == "F"), ]
+  
+  if (nrow(sub_sexes_m) < 40 || nrow(sub_sexes_f) < 40) {
+    next
+  }
+    cov.matrices_m[[i]] = cov(as.matrix(sub_sexes_m[,23:61]))
+    cov.matrices_f[[i]] = cov(as.matrix(sub_sexes_f[,23:61]))
+}
+
+#
+species = tree$tip.label[39:62]
+platyrrhini = list(cov.matrices_f, cov.matrices_m)
+
+c_compare = vector()
+for(i in 1:length(catarrhini[[1]])){
+  if(is.null(catarrhini[[1]][[i]])) next
+  c_compare[i] = MatrixCompare(catarrhini[[1]][[i]], catarrhini[[2]][[i]])[1,1]
+}
+
+p_compare = vector()
+for(i in 1:length(platyrrhini[[1]])){
+  if(is.null(platyrrhini[[1]][[i]])) next
+  p_compare[i] = MatrixCompare(platyrrhini[[1]][[i]], platyrrhini[[2]][[i]])[1,1]
+}
+
+
+# Criar data frame
+df <- data.frame(
+  group = c(rep("C Compare", length(c_compare)),
+            rep("P Compare", length(p_compare))),
+  value = c(c_compare, p_compare)
+)
+
+# Remover NAs
+df <- df[!is.na(df$value), ]
+
+# Renomear os grupos
+df$group <- ifelse(df$group == "C Compare", "Catarrhini", "Platyrrhini")
+
+# Definir cores
+cores <- c("Catarrhini" = "#1b9e77", "Platyrrhini" = "#7570b3")
+
+# Plot
+p = ggplot(df, aes(x = group, y = value, fill = group)) +
+  geom_violin(alpha = 0.5, width = 1.0, color = NA) +          
+  geom_jitter(width = 0.1, size = 3, alpha = 0.8, aes(color = group)) + 
+  scale_fill_manual(values = cores) +                           
+  scale_color_manual(values = cores) +                          
+  scale_y_continuous(limits = c(0, 1)) +   # <- aqui ajusta o eixo Y
+  theme_bw(base_size = 14) +
+  labs(x = "", y = "RS correlation value between Males and Females P matrices") +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text.x = element_text(size = 14, face = "bold")
+  )
+p
+
+ggsave("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PM_Matrices.png", plot = p,
+       width = 18,    # largura em inches
+       height = 8,   # altura em inches
+       dpi = 200)    # resolução
