@@ -1,0 +1,262 @@
+# Average and PCs of extant GENUS
+##################################################################################
+### Catarrhini
+##################################################################################
+
+setwd("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/")
+
+# load packages
+if(!require(stringr)){install.packages("stringr"); library(stringr)}
+
+# geometric mean function
+geomean = function(vector){
+  g = exp(mean(log(vector)))
+  return(g)
+}
+
+# Read a
+msrs = read.csv(file = "~/Dropbox/Doc/Data/primates_measures/medidas_catarrhini.csv", dec = ",", sep = ",")
+matings = read.csv("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/genus_Matings.csv", sep = ";")
+
+# check names and remove doubts
+msrs$SEX[which(msrs$SEX == "?female")] = "female"
+msrs$SEX[which(msrs$SEX == "?male")] = "male"
+
+# remove uncertain sex
+msrs$SEX[msrs$SEX == "0"] = NA
+msrs$SEX[msrs$SEX == ""] = NA
+msrs$SEX[msrs$SEX == "sexo"] = NA
+
+msrs = msrs[complete.cases(msrs$SEX), ]
+
+# read all vcv matrices
+setwd("~/Dropbox/Doc/Data/genus_vcv/")
+temp = list.files(pattern = "*.txt")
+vcv = lapply(temp, read.csv, header = FALSE, dec = ".", sep = "\t")
+names(vcv)  = gsub(".csv", replacement = "", temp)
+
+wrong <- which(sapply(vcv, ncol) == 1)
+
+for(i in wrong){
+  
+  file <- temp[i]
+
+  # tenta outras combinações
+  mat <- read.table(file, header = FALSE, dec = ".")
+  
+  vcv[[i]] <- as.matrix(mat)
+}
+vcv <- lapply(vcv, as.matrix)
+names(vcv) <- gsub("\\.txt$", "", temp)
+
+# get genus which we have matings
+index = which(matings$PARVORDER == "Catarrhini")
+genus_catarrhini = matings$GENUS[index]
+vcv = vcv[ names(vcv) %in% genus_catarrhini ]
+
+# create lists
+averages = list()
+bytrait_averages = list()
+pcs = list()
+vals = list()
+diags = list()
+for(i in 1:length(names(vcv))){
+  # choose genus i
+  genus = names(vcv)[i]
+
+  species_subset = msrs[which(msrs$GENUS == genus), ]
+  
+    # separate M and F
+  sub_sexes_m = species_subset[which(species_subset$SEX == "male"), ]
+  sub_sexes_f = species_subset[which(species_subset$SEX == "female"), ]
+  
+  # geometric means of M and F
+  avg_m = apply(sub_sexes_m[,49:87], 2, geomean)
+  avg_f = apply(sub_sexes_f[,49:87], 2, geomean)
+  
+  # general geometric means of M and F
+  gen_avg_m = geomean(avg_m)
+  gen_avg_f = geomean(avg_f)
+  
+  # PCs and eigenvalues
+  covar = vcv[[i]]
+  pc_1 = eigen(covar)$vectors[,1]
+  vals_1 = eigen(covar)$values[1]
+  pc_2 = eigen(covar)$vectors[,2]
+  vals_2 = eigen(covar)$values[2]
+  pc_3 = eigen(covar)$vectors[,3]
+  vals_3 = eigen(covar)$values[3]
+  pc_4 = eigen(covar)$vectors[,4]
+  vals_4 = eigen(covar)$values[4]
+  pc_5 = eigen(covar)$vectors[,5]
+  vals_5 = eigen(covar)$values[5]
+  pc_6 = eigen(covar)$vectors[,6]
+  vals_6 = eigen(covar)$values[6]
+  pc_7 = eigen(covar)$vectors[,7]
+  vals_7 = eigen(covar)$values[7]
+  pc_8 = eigen(covar)$vectors[,8]
+  vals_8 = eigen(covar)$values[8]
+  
+  # Diag
+  v = diag(as.matrix(covar))
+  
+  # insert in list of genus i
+  averages[[i]] = list(gen_avg_m, gen_avg_f)
+  bytrait_averages[[i]] = list(avg_m, avg_f)
+  pcs[[i]] = list(pc_1, pc_2, pc_3, pc_4, pc_5, pc_6, pc_7, pc_8)
+  vals[[i]] = list(vals_1, vals_2, vals_3, vals_4, vals_5, vals_6)
+  diags[[i]] = v
+}
+# get names of genus
+genus = names(vcv)
+
+# create and naming final list
+extant_averages_pcs_c = list(genus, averages, bytrait_averages, pcs, vals, diags)
+
+names(extant_averages_pcs_c) = c("Genus", "Averages", "ByTrait_Averages", "PCs", "Autovalues", 
+                               "Diagonal")
+
+names(extant_averages_pcs_c$Averages) = genus
+names(extant_averages_pcs_c$ByTrait_Averages) = genus
+names(extant_averages_pcs_c$PCs) = genus
+names(extant_averages_pcs_c$Autovalues) = genus
+names(extant_averages_pcs_c$Diagonal) = genus
+
+for(i in 1:length(genus)){
+  names(extant_averages_pcs_c$Averages[[i]]) = c("Machos", "Fêmeas")
+  names(extant_averages_pcs_c$ByTrait_Averages[[i]]) = c("Machos", "Fêmeas")
+}
+
+for(i in 1:length(genus)){
+  names(extant_averages_pcs_c$PCs[[i]]) = c("PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8")
+  names(extant_averages_pcs_c$Autovalues[[i]]) = c("Lambda1", "Lambda2", "Lambda3", "Lambda", "Lambda5", "Lambda6")
+}
+
+##################################################################################
+### Platyrrhini
+##################################################################################
+
+# load packages
+if(!require(stringr)){install.packages("stringr"); library(stringr)}
+
+# geometric mean function
+geomean = function(vector){
+  g = exp(mean(log(vector)))
+  return(g)
+}
+
+# Read 
+msrs = read.csv(file = "~/Dropbox/Doc/Data/primates_measures/medidas_platyrrhini.csv", dec = ".", sep = ",")
+
+index = which(apply(msrs[, 23:61], 1, function(x) any(is.na(x) | (x == "" & !is.numeric(x)))))
+msrs = msrs[-index,]
+
+# remove uncertain sex
+msrs$SEX4.[msrs$SEX4. == ""] = NA
+msrs$SEX4.[msrs$SEX4. == " "] = NA
+
+msrs = msrs[complete.cases(msrs$SEX4.), ]
+
+# read all vcv matrices
+setwd("~/Dropbox/Doc/Data/genus_vcv/")
+temp = list.files(pattern = "*.txt")
+vcv = lapply(temp, read.csv, header = FALSE, dec = ".", sep = "\t")
+names(vcv)  = gsub(".csv", replacement = "", temp)
+
+wrong <- which(sapply(vcv, ncol) == 1)
+
+for(i in wrong){
+  
+  file <- temp[i]
+  
+  # tenta outras combinações
+  mat <- read.table(file, header = FALSE, dec = ".")
+  
+  vcv[[i]] <- as.matrix(mat)
+}
+vcv <- lapply(vcv, as.matrix)
+names(vcv) <- gsub("\\.txt$", "", temp)
+
+# get genus which we have matings
+index = which(matings$PARVORDER == "Platyrrhini")
+genus_platyrrhini = matings$GENUS[index]
+vcv = vcv[ names(vcv) %in% genus_platyrrhini ]
+
+# create lists
+averages= list()
+bytrait_averages = list()
+pcs = list()
+vals = list()
+diags = list()
+for(i in 1:length(names(vcv))){
+  # choose genus i
+  genus = names(vcv)[i]
+  
+  species_subset = msrs[which(msrs$GENUS. == genus), ]
+  
+  # separate M and F
+  sub_sexes_m = species_subset[which(species_subset$SEX4. == "M"), ]
+  sub_sexes_f = species_subset[which(species_subset$SEX4. == "F"), ]
+  
+  # geometric means of M and F
+  avg_m = apply(sub_sexes_m[,23:61], 2, geomean)
+  avg_f = apply(sub_sexes_f[,23:61], 2, geomean)
+  
+  # general geometric means of M and F
+  gen_avg_m = geomean(avg_m)
+  gen_avg_f = geomean(avg_f)
+  
+  # PCs and eigenvalues
+  covar = vcv[[i]]
+  pc_1 = eigen(covar)$vectors[,1]
+  vals_1 = eigen(covar)$values[1]
+  pc_2 = eigen(covar)$vectors[,2]
+  vals_2 = eigen(covar)$values[2]
+  pc_3 = eigen(covar)$vectors[,3]
+  vals_3 = eigen(covar)$values[3]
+  pc_4 = eigen(covar)$vectors[,4]
+  vals_4 = eigen(covar)$values[4]
+  pc_5 = eigen(covar)$vectors[,5]
+  vals_5 = eigen(covar)$values[5]
+  pc_6 = eigen(covar)$vectors[,6]
+  vals_6 = eigen(covar)$values[6]
+  pc_7 = eigen(covar)$vectors[,7]
+  vals_7 = eigen(covar)$values[7]
+  pc_8 = eigen(covar)$vectors[,8]
+  vals_8 = eigen(covar)$values[8]
+  
+  # Diag
+  v = diag(as.matrix(covar))
+  
+  # insert in list of genus i
+  extant_averages_pcs_c$Averages[[27+i]] = list(gen_avg_m, gen_avg_f)
+  extant_averages_pcs_c$ByTrait_Averages[[27+i]] = list(avg_m, avg_f)
+  extant_averages_pcs_c$PCs[[27+i]] = list(pc_1, pc_2, pc_3, pc_4, pc_5, pc_6, pc_7, pc_8)
+  extant_averages_pcs_c$Autovalues[[27+i]] = list(vals_1, vals_2, vals_3, vals_4, vals_5, vals_6)
+  extant_averages_pcs_c$Diagonal[[27+i]] = v
+}
+
+# get names of genus
+genus = names(vcv)
+extant_averages_pcs_c$Genus = append(extant_averages_pcs_c$Genus, genus)
+
+#
+names(extant_averages_pcs_c$Averages)[28:43] = names(vcv)
+names(extant_averages_pcs_c$ByTrait_Averages)[28:43] = names(vcv)
+names(extant_averages_pcs_c$PCs)[28:43] = names(vcv)
+names(extant_averages_pcs_c$Autovalues)[28:43] = names(vcv)
+names(extant_averages_pcs_c$Diagonal)[28:43] = names(vcv)
+
+#
+for(i in 28:43){
+  names(extant_averages_pcs_c$Averages[[i]]) = c("Machos", "Fêmeas")
+  names(extant_averages_pcs_c$ByTrait_Averages[[i]]) = c("Machos", "Fêmeas")
+}
+
+#
+for(i in 28:43){
+  names(extant_averages_pcs_c$PCs[[i]]) = c("PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8")
+  names(extant_averages_pcs_c$Autovalues[[i]]) = c("Lambda1", "Lambda2", "Lambda3", "Lambda", "Lambda5", "Lambda6")
+}
+
+saveRDS(extant_averages_pcs_c, "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/averages_PCS_autovalues_primates.RDS")

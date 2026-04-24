@@ -3,8 +3,8 @@ if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
 if(!require(MASS)){install.packages("MASS"); library(MASS)}
 if(!require(GGally)){install.packages("GGally"); library(GGally)}
 
-medidas = read.table("~/Dropbox/cor_PCS_dimorphism_extant.csv", header = TRUE, sep = ",")
-matings = readRDS("~/Dropbox/New_Haplorrhini_MDS_Matings.RDS") 
+medidas = read.table("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_dimorphism_extant.csv", header = TRUE, sep = ",")
+matings = readRDS("~/Dropbox/Doc/Code/evowm/R/Outputs/Haplorrhini_MDS_Matings.RDS") 
 
 # Primeiro, armazenamos a ordem que precisamos
 ordem = match(matings$especies, medidas$matings.especies)

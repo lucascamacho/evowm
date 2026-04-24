@@ -7,6 +7,7 @@ library(scales)
 library(gridExtra)
 library(patchwork)
 library(ggpmisc)
+library(tidyr)
 
 #
 data = read.csv2("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_dimorphism_extant.csv", sep = ",")
@@ -19,22 +20,24 @@ data[ , cols] <- lapply(data[ , cols], function(x) {
 })
 
 # Criar coluna de grupos
-data$grupo <- ifelse(1:nrow(data) <= 38, "Catarrhini", "Platyrrhini")
-
 mycols <- c("#1b9e77", "#7570b3")
 
+# identify parvorders
+data$grupo <- c(rep("Catarrhini", 38), rep("Platyrrhini", 27))
+
 # p1 com R²
-p1 <- ggplot(data, aes(x = align_1, y = normas, color = grupo, fill = grupo)) +
+p1 <- ggplot(data, aes(x = atanh(align_1), y = normas, color = grupo, fill = grupo)) +
   geom_smooth(method = "lm", se = TRUE, linewidth = 1.4,
               linetype = "dashed", alpha = 0.2) +
   geom_point(size = 2.5, alpha = 0.9, stroke = 2) +
+  geom_hline(yintercept = 1, linetype = "dashed", alpha = 0.6, col = "red") +
   stat_poly_eq(
     aes(label = paste(..rr.label..), color = grupo),
     formula = y ~ x,
     parse = TRUE,
-    label.x.npc = "left",
-    label.y.npc = c(0.95, 0.85),
-    size = 6
+    size = 6,
+    label.x = "left",
+    label.y = "bottom"
   ) +
   scale_x_continuous(breaks = pretty_breaks(n = 6)) +
   scale_y_continuous(breaks = pretty_breaks(n = 6)) +
@@ -43,55 +46,94 @@ p1 <- ggplot(data, aes(x = align_1, y = normas, color = grupo, fill = grupo)) +
   theme_classic(base_size = 14) +
   theme_bw(base_size = 14) +
   labs(
-    x = "PC1-Sexual Dimorphism Alignments",
-    y = "Normalized Magnitude of Sexual Dimorphism",
+    x = "Pmax-Sexual Dimorphism Alignments",
+    y = "Sexual Dimorphism",
     color = "Parvorder",
     fill  = "Parvorder"
   ) +
   theme(
-    #    legend.position = "none",
+    panel.border = element_rect(color = "black", fill = NA),
+    legend.position = "none",
     panel.grid = element_blank(),
     plot.title = element_text(face = "bold", hjust = 0.5, size = 16),
-    axis.title = element_text(face = "bold")
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 14)
   )
 
-ggsave("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_Dimorphism_Extant.png", plot = p1,
+p1
+
+
+ggsave("~/Dropbox/Doc/Code/evowm/R/Outputs/F_M_cor_PCS_Dimorphism_Extant.png", plot = p1,
        width = 12,    # largura em inches
        height = 8,   # altura em inches
        dpi = 200)    # resolução
 
-
 ##########################
 # All values of aligns with SD and PCs 1 to 8
 # Seleciona as colunas
-cols <- 5:12
+cols <- 5:8
+titles <- paste("SD and PC", 1:4)
 
-# Define grid 4x2 (4 linhas, 2 colunas)
-png(
-  filename = "~/Dropbox/Doc/Code/evowm/R/Outputs/Hist_All_cor_PCS_Dimorphism_Extant.png",
-  width = 4000,      # largura em pixels
-  height = 3000,     # altura em pixels
-  res = 300           # resolução em dpi
+# Coloca os dados em formato longo
+df_long <- data %>%
+  select(all_of(cols)) %>%
+  setNames(titles) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Component",
+    values_to = "Correlation"
+  )
+
+# Cria o gráfico
+# Cria o gráfico com histograma + densidade
+p <- ggplot(df_long, aes(x = Correlation)) +
+  geom_histogram(
+    aes(y = ..density..),
+    bins = 20,
+    fill = "#6baed6",
+    color = "white",
+    alpha = 0.8
+  ) +
+  geom_density(
+    color = "#08519c",   # azul mais escuro
+    linewidth = 1.2,
+    alpha = 0.7
+  ) +
+  facet_wrap(~ Component, scales = "free", ncol = 4) +
+  theme_classic(base_size = 14) +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    panel.spacing = unit(1, "lines")
+  ) +
+  labs(
+    x = "Correlation",
+    y = "Density",
+    title = "Alignment Between Sexual Dimorphism and Principal Components"
+  )
+p
+
+# Salva o gráfico em alta resolução
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Outputs/Hist_All_cor_PCS_Dimorphism_Extant.png",
+  plot = p,
+  width = 12,
+  height = 7,
+  dpi = 300
 )
-par(mfrow = c(4, 2), mar = c(3, 3, 2, 1))
-for(i in cols){
-  hist(data[[i]],
-       main = colnames(data)[i],
-       xlab = "",
-       ylab = "",
-       col = "lightblue",
-       border = "white")
-}
-dev.off()
 
-# Extract R2
+
+# Extract R2 de Platyrrhini e Catarrhini
 # ajustar os modelos
 mods <- data %>%
   group_split(grupo) %>%
   setNames(levels(data$grupo)) %>%
-  lapply(function(df) lm(normas ~ align_1, data = df))
+  lapply(function(df) lm(normas ~ atanh(align_1), data = df))
 
 # extrair R²
 r2_vals <- sapply(mods, function(m) summary(m)$r.squared)
 r2_vals
-

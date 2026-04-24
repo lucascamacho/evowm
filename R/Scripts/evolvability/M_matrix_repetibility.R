@@ -1,0 +1,126 @@
+# M_matrix building from repetibilities
+# using vcv matrix
+# in catarrhini, repetibility of the specie are the same of the genera
+
+setwd("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability")
+
+library(openxlsx)
+library(dplyr)
+library(MASS)
+
+# Read VCV matrices
+setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
+temp <- list.files(pattern = "*.csv")
+vcv <- lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
+names(vcv) <- gsub(".csv", replacement= "", temp)
+
+medidas <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
+species <- medidas$Species
+
+#
+repetibility <- openxlsx::read.xlsx("~/Dropbox/Doc/Data/primates_measures/Repetibility.xlsx")
+repetibility$full_species <- paste(repetibility$genus, repetibility$species)
+
+#
+platy <- data.frame(rep("Platyrrhini", 24), species[50:73])
+cata <- data.frame(rep("Catarrhini", 49), species[1:49])
+
+# extrai o gênero de cata
+cata$genus <- sub("_.*", "", cata$species.1.49.)
+
+# faz o join com repetibility (usando gênero)
+cata_rep <- cata %>%
+  left_join(
+    repetibility %>% 
+      dplyr::filter(parvorder == "Catarrhini") %>%
+      dplyr::select(genus, vcv_repetibility),
+    by = "genus"
+  )
+
+cata_rep <- cata_rep %>%
+  transmute(
+    species = species.1.49.,
+    parvorder = rep..Catarrhini...49.,
+    repetibility = vcv_repetibility
+  )
+
+# transformar "Genus_species" -> "Genus species"
+platy$full_species <- gsub("_", " ", platy$species.50.73.)
+
+platy_rep <- platy %>%
+  left_join(
+    repetibility %>%
+      dplyr::filter(parvorder == "Platyrrhini") %>%
+      dplyr::select(full_species, vcv_repetibility),
+    by = "full_species"
+  ) %>%
+  transmute(
+    species = species.50.73.,
+    parvorder = rep..Platyrrhini...24.,
+    repetibility = vcv_repetibility
+  )
+
+final_df <- bind_rows(platy_rep, cata_rep)
+
+final_df <- final_df %>%
+  filter(!is.na(repetibility))
+
+#
+sp_comuns <- Reduce(intersect, list(
+  names(vcv),
+  medidas$Species,
+  final_df$species
+))
+
+final_df$species_vcv <- gsub(" ", "_", final_df$species)
+
+M_list <- list()
+
+for(sp in names(vcv)) {
+  
+  # pega matriz P da espécie
+  P <- vcv[[sp]]
+  P <- as.matrix(P)
+  
+  # pega repetibilidade da espécie
+  R <- final_df$repetibility[final_df$species_vcv == sp]
+  R <- as.numeric(R)
+  
+  # checagem de segurança
+  if(length(R) == 0 || is.na(R)) {
+    warning(paste("Sem repetibilidade para:", sp))
+    next
+  }
+  
+  # constrói matriz M (opção 2: diagonal)
+  M <- diag(diag(P) * (1 - R))
+  
+  # salva
+  M_list[[sp]] <- M
+}
+
+n_sim <- 10000
+n_traits <- 38
+
+eps_list <- list()
+
+for(sp in names(M_list)) {
+  
+  M <- M_list[[sp]]
+  M <- as.matrix(M)
+  
+  # garante dimensão correta (caso algum bug tenha escapado)
+  if(nrow(M) != n_traits || ncol(M) != n_traits) {
+    warning(paste("Dimensão incorreta em:", sp))
+    next
+  }
+  
+  eps_samples <- mvrnorm(
+    n = n_sim,
+    mu = rep(0, n_traits),
+    Sigma = M
+  )
+  
+  eps_list[[sp]] <- eps_samples
+}
+

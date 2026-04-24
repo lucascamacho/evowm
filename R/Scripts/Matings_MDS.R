@@ -14,7 +14,7 @@ if(!require(reshape2)){install.packages("reshape2"); library(reshape2)}
 if(!require(patchwork)){install.packages("patchwork"); library(patchwork)}
 
 # read mating data
-dados = read.csv("~/Dropbox/Doc/Data/wos_mating_systems/Matings.csv")
+dados = read.csv("~/Dropbox/Doc/Data/wos_mating_systems/Matings.csv", sep = ";")
 dados = dados[!is.na(dados$DOMINANCE) & !is.na(dados$AGGRESSION), ]
 
 # get species names
@@ -29,7 +29,7 @@ numeros = c(3, 2, 4, 0, 1, 2, 2, 2, 3, 4)
 class_social = data.frame(classes, numeros)
 
 classes = c(unique(dados$MATING_SYSTEM))
-numeros = c(2, 1, 3, 1, 0, 1, 3)
+numeros = c(2, 1, 3, 1, 0, 1, 1, 3)
 class_mating = data.frame(classes, numeros)
 
 classes = c(unique(dados$DOMINANCE))
@@ -91,7 +91,7 @@ for(i in 3:8){
 
 #################################
 # GOWER DIST + NMDS
-datas = read.csv("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_dimorphism_extant.csv", header = TRUE)
+datas = read.csv("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_dimorphism_extant.csv", header = TRUE, sep = ",")
 species = datas$matings.especies
 
 dados <- dados %>%

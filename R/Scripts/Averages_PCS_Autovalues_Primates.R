@@ -16,7 +16,7 @@ geomean = function(vector){
 
 # Read and unique species
 msrs = read.csv(file = "~/Dropbox/Doc/Data/primates_measures/medidas_catarrhini.csv", dec = ",", sep = ",")
-matings = read.csv("~/Dropbox/Doc/Data/wos_mating_systems/Matings.csv")
+matings = read.csv("~/Dropbox/Doc/Data/wos_mating_systems/Matings.csv", sep = ";")
 
 # check names and remove doubts
 msrs$SEX[which(msrs$SEX == "?female")] = "female"
@@ -52,9 +52,9 @@ for(i in 1:length(names(vcv))){
   sp = str_split_1(names(vcv)[[i]], "_")[2]
   
   species_subset = msrs[which(msrs$GENUS == genus), ]
-  species_subset = species_subset[which(species_subset$SPECIES == sp), ]
-  
-  # separate M and F
+  #species_subset = species_subset[which(species_subset$SPECIES == sp), ]
+
+    # separate M and F
   sub_sexes_m = species_subset[which(species_subset$SEX == "male"), ]
   sub_sexes_f = species_subset[which(species_subset$SEX == "female"), ]
   
@@ -151,6 +151,11 @@ temp = list.files(pattern = "*.csv")
 vcv = lapply(temp, read.csv, header = FALSE, dec = ",")
 names(vcv)  = gsub(".csv", replacement = "", temp)
 
+# converte todas as colunas para numeric, removendo espaços
+vcv$Lagothrix_lagothricha <- as.data.frame(lapply(vcv$Lagothrix_lagothricha, function(x) as.numeric(trimws(x))))
+vcv$Cacajao_calvus = read.csv("~/Dropbox/Doc/Data/p_vcv_gabriel/Cacajao_calvus.csv", header = FALSE, sep = ";", dec = ",")
+vcv$Cacajao_calvus <- as.data.frame(lapply(vcv$Cacajao_calvus, function(x) as.numeric(trimws(x))))
+
 # get species which we have matings
 index = which(matings$PARVORDER == "Platyrrhini")
 species_platyrrhini = paste(matings$GENUS, matings$SPECIES, sep = "_")[108:188]
@@ -169,7 +174,7 @@ for(i in 1:length(names(vcv))){
   
   species_subset = msrs[which(msrs$GENUS. == genus), ]
   species_subset = species_subset[which(species_subset$SPECIES. == sp), ]
-  
+
   # separate M and F
   sub_sexes_m = species_subset[which(species_subset$SEX4. == "M"), ]
   sub_sexes_f = species_subset[which(species_subset$SEX4. == "F"), ]
@@ -217,20 +222,20 @@ especies = names(vcv)
 extant_averages_pcs_c$Species = append(extant_averages_pcs_c$Species, especies)
 
 #
-names(extant_averages_pcs_c$Averages)[49:78] = names(vcv)
-names(extant_averages_pcs_c$ByTrait_Averages)[49:78] = names(vcv)
-names(extant_averages_pcs_c$PCs)[49:78] = names(vcv)
-names(extant_averages_pcs_c$Autovalues)[49:78] = names(vcv)
-names(extant_averages_pcs_c$Diagonal)[49:78] = names(vcv)
+names(extant_averages_pcs_c$Averages)[49:80] = names(vcv)
+names(extant_averages_pcs_c$ByTrait_Averages)[49:80] = names(vcv)
+names(extant_averages_pcs_c$PCs)[49:80] = names(vcv)
+names(extant_averages_pcs_c$Autovalues)[49:80] = names(vcv)
+names(extant_averages_pcs_c$Diagonal)[49:80] = names(vcv)
 
 #
-for(i in 49:78){
+for(i in 49:80){
   names(extant_averages_pcs_c$Averages[[i]]) = c("Machos", "Fêmeas")
   names(extant_averages_pcs_c$ByTrait_Averages[[i]]) = c("Machos", "Fêmeas")
 }
 
 #
-for(i in 49:78){
+for(i in 49:80){
   names(extant_averages_pcs_c$PCs[[i]]) = c("PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8")
   names(extant_averages_pcs_c$Autovalues[[i]]) = c("Lambda1", "Lambda2", "Lambda3", "Lambda", "Lambda5", "Lambda6")
 }

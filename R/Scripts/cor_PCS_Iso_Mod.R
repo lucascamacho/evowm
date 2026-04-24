@@ -163,3 +163,60 @@ names(novo_df) = c("Species", "cor_iso_1", "cor_iso_2", "cor_iso_3", "cor_iso_4"
                             "cor_modules_1", "cor_modules_2", "cor_modules_3", "cor_modules_4", "cor_modules_5", "cor_modules_6", "cor_modules_7", "cor_modules_8")
 
 write.csv(novo_df, "~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_Iso_Mod.csv", row.names = FALSE)
+
+#
+data = read.csv("~/Dropbox/Doc/Code/evowm/R/Outputs/cor_PCS_iso_mod.csv")
+
+cols <- 2:5
+titles <- paste("Isometric and PC", 1:4)
+
+# Coloca os dados em formato longo
+df_long <- data %>%
+  select(all_of(cols)) %>%
+  setNames(titles) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Component",
+    values_to = "Correlation"
+  )
+
+# Cria o gráfico
+# Cria o gráfico com histograma + densidade
+p <- ggplot(df_long, aes(x = Correlation)) +
+  geom_histogram(
+    aes(y = ..density..),
+    bins = 20,
+    fill = "#74c476",    # verde claro (agradável)
+    color = "white",
+    alpha = 0.8
+  ) +
+  geom_density(
+    color = "#238b45",   # verde escuro
+    linewidth = 1.2,
+    alpha = 0.8
+  ) +
+  facet_wrap(~ Component, scales = "free", ncol = 4) +
+  theme_classic(base_size = 14) +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    panel.spacing = unit(1, "lines")
+  ) +
+  labs(
+    x = "Correlation",
+    y = "Density",
+    title = "Alignment Between Principal Components and Isometric Vector"
+  )
+p
+
+# Salva o gráfico em alta resolução
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Outputs/Hist_All_cor_PCS_Isometric.png",
+  plot = p,
+  width = 12,
+  height = 7,
+  dpi = 300
+)
+

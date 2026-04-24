@@ -13,6 +13,9 @@ setwd("~/Dropbox/Doc/Data/vcv/")
 temp = list.files(pattern = "*.csv")
 vcv = lapply(temp, read.csv, header = FALSE, dec = ",")
 names(vcv)  = gsub(".csv", replacement = "", temp)
+vcv$Lagothrix_lagothricha <- as.data.frame(lapply(vcv$Lagothrix_lagothricha, function(x) as.numeric(trimws(x))))
+vcv$Cacajao_calvus = read.csv("~/Dropbox/Doc/Data/p_vcv_gabriel/Cacajao_calvus.csv", header = FALSE, sep = ";", dec = ",")
+vcv$Cacajao_calvus <- as.data.frame(lapply(vcv$Cacajao_calvus, function(x) as.numeric(trimws(x))))
 setwd("~/Dropbox/Doc/Code/evowm/R/Scripts")
 
 # get species
@@ -24,8 +27,9 @@ commom <- intersect(names(vcv), matings$especies)
 # read and plot phylo tree
 filename = "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
 tree = ape::read.nexus(filename)
+tree$tip.label[tree$tip.label == "Lagothrix_lagotricha"] <- "Lagothrix_lagothricha"
 species = matings$especies
-tree = drop.tip(tree, setdiff(tree$tip.label, commom))
+tree = drop.tip(tree, setdiff(tree$tip.label, species))
 
 # get species averages for males and females
 averages = readRDS("~/Dropbox/Doc/Code/evowm/R/Outputs/averages_PCS_autovalues_primates.RDS")
@@ -113,7 +117,7 @@ all_cov_matrices = PhyloW(tree, vcv2)
 pcs = list()
 vals = list()
 diags = list()
-for(i in 63:123){
+for(i in 66:129){
   sp = which(names(all_cov_matrices) == i)
   covar = all_cov_matrices[[sp]]
   
@@ -144,11 +148,11 @@ for(i in 63:123){
 }
 
 # make list and rename it
-ancestral_dimorp_pcs = list(seq(63, 123, 1), 
+ancestral_dimorp_pcs = list(seq(66, 129, 1), 
                             bytrait_averages, 
                             rowMeans(bytrait_averages[[1]] - bytrait_averages[[2]]), 
                             bytrait_dimor_ancs, 
-                            rev(all_cov_matrices[63:123]),  
+                            rev(all_cov_matrices[66:129]),  
                             pcs, 
                             vals, 
                             diags)
@@ -157,15 +161,15 @@ names(ancestral_dimorp_pcs) = c("Ancestrals", "ByTrait_Averages", "Dimorphism","
 # name lists and remove empty lists
 names(ancestral_dimorp_pcs$ByTrait_Averages) = c("Machos", "Fêmeas")
 
-names(ancestral_dimorp_pcs$PCs) = seq(1, 123, 1)
-names(ancestral_dimorp_pcs$Eigenvalues) = seq(1, 123, 1)
-names(ancestral_dimorp_pcs$Diagonals) = seq(1, 123, 1)
+names(ancestral_dimorp_pcs$PCs) = seq(1, 129, 1)
+names(ancestral_dimorp_pcs$Eigenvalues) = seq(1, 129, 1)
+names(ancestral_dimorp_pcs$Diagonals) = seq(1, 129, 1)
 
-ancestral_dimorp_pcs$PCs = ancestral_dimorp_pcs$PCs[-(1:62)]
-ancestral_dimorp_pcs$Eigenvalues = ancestral_dimorp_pcs$Eigenvalues[-(1:62)]
-ancestral_dimorp_pcs$Diagonals = ancestral_dimorp_pcs$Diagonals[-(1:62)]
+ancestral_dimorp_pcs$PCs = ancestral_dimorp_pcs$PCs[-(1:65)]
+ancestral_dimorp_pcs$Eigenvalues = ancestral_dimorp_pcs$Eigenvalues[-(1:65)]
+ancestral_dimorp_pcs$Diagonals = ancestral_dimorp_pcs$Diagonals[-(1:65)]
 
-for (i in 1:61) {
+for (i in 1:64) {
   names(ancestral_dimorp_pcs$PCs[[i]]) <- c("PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8")
   names(ancestral_dimorp_pcs$Eigenvalues[[i]]) <- c("Lambda1", "Lambda2", "Lambda3", "Lambda4", "Lambda5", "Lambda6", "Lambda7", "Lambda8")
 }

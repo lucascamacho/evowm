@@ -1,4 +1,4 @@
-setwd("~/Dropbox/Doc/Data/vcv")
+setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
 
 library(Matrix)
 
@@ -40,8 +40,8 @@ check_matrix <- function(P) {
 
 
 # read P matrices
-temp = list.files(pattern="*.csv")
-vcv = lapply(temp, read.csv, header = FALSE, dec = ",")
+temp = list.files(pattern = "*.csv")
+vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep=' ', row.names = 1)
 names(vcv)  = gsub(".csv", replacement = "", temp)
 
 # Loop sobre as 39 matrizes
