@@ -55,7 +55,7 @@ genus2 <- sub("_.*", "", tree2$tip.label)
 keep_one <- !duplicated(genus2)
 tree_genus <- drop.tip(tree2, tree2$tip.label[!keep_one])
 tree_genus$tip.label <- sub("_.*", "", tree_genus$tip.label)
-plot(tree_genus)
+#plot(tree_genus)
 
 # cut some vcv
 vcv <- vcv[names(vcv) %in% matings$genus]
@@ -94,10 +94,6 @@ for(i in seq_along(matings$genus)){
   #size <- geomean(c(gm_machos, gm_femeas))
   size <- (geomean(medidas$Machos) + geomean(medidas$Fêmeas)) / 2
   #size <- (geomean(log(medidas$Machos)) + geomean(log(medidas$Fêmeas))) / 2
-  # size <- ((log(medidas$Machos[2]) + log(medidas$Fêmeas[2])) /2) +
-  # ((log(medidas$Machos[7]) + log(medidas$Fêmeas[7])) /2) +
-  # ((log(medidas$Machos[10]) + log(medidas$Fêmeas[10])) /2) +
-  # ((log(medidas$Machos[34]) + log(medidas$Fêmeas[34])) /2)
   
   # dimor <- (medidas$Machos - medidas$Fêmeas) / size
   dimor <- medidas$Machos - medidas$Fêmeas

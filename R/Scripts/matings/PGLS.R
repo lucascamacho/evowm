@@ -23,7 +23,7 @@ ancestrals = readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/ancestrals_aver
 
 # pegar especies comuns entre nicho e o resto dos dados
 sp_comuns <- Reduce(intersect, list(
-#  nicho$genus,
+  #nicho$genus,
   align$matings.genus,
   evolvas$genus,
   mds$genus
@@ -92,12 +92,12 @@ tree_genus <- drop.tip(tree, setdiff(tree$tip.label, representatives))
 tree_genus$tip.label <- names(representatives)
 
 #
-#media_genero <- nicho %>%
-#  dplyr::group_by(.data$genus) %>%
-#  dplyr::summarise(
-#  climacv_mean = mean(.data$climacv, na.rm = TRUE),
-#  CVn_mean = mean(.data$CVn, na.rm = TRUE)
-#  )
+# media_genero <- nicho %>%
+#   dplyr::group_by(.data$genus) %>%
+#   dplyr::summarise(
+#   climacv_mean = mean(.data$climacv, na.rm = TRUE),
+#   CVn_mean = mean(.data$CVn, na.rm = TRUE)
+#   )
 
 #nicho_f <- media_genero[match(tree_genus$tip.label, media_genero$genus), ]
 evolvas_f <- evolvas_f[match(tree_genus$tip.label, evolvas_f$genus), ]
@@ -266,7 +266,7 @@ df <- data.frame(
 
 df <- df[match(tree_p$tip.label, df$genus), ]
 
-#predictors <- c("size", "nmds1", "nmds2",  "integration", "furtive", "prop", "social", "mating")
+#predictors <- c("size", "nmds1", "nmds2",  "integration", "furtive", "prop", "social", "mating", "clima", "cvn")
 predictors <- c("size", "nmds1", "nmds2", "integration")
 response <- "normas"
 
@@ -506,6 +506,11 @@ weights <- exp(-0.5*delta) / sum(exp(-0.5*delta))
 
 delta
 weights
+
+res_haplo <- residuals(model_basic)
+lambda_haplo <- phylosig(tree_genus, res_haplo, method="lambda")
+lambda_haplo
+
 
 # Previsões do modelo final (pode escolher basic ou inter)
 df$predicted <- as.numeric(predict(model_basic, newdata = df))

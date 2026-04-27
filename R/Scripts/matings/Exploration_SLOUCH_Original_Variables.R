@@ -86,7 +86,7 @@ tree_genus <- drop.tip(tree, setdiff(tree$tip.label, representatives))
 
 # renomear para os gêneros
 tree_genus$tip.label <- names(representatives)
-plot(tree_genus)
+#plot(tree_genus)
 
 #
 #media_genero <- nicho %>%
