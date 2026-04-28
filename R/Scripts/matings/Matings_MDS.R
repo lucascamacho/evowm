@@ -91,21 +91,21 @@ for(i in 3:8){
 genus = dados$GENUS
 rownames(dados) = dados$GENUS
 
-dados <- dados %>%
-  mutate(full_species = paste(GENUS, SPECIES, sep = "_")) %>%
-  filter(full_species %in% species)
+# dados <- dados %>%
+#   mutate(full_species = paste(GENUS, SPECIES, sep = "_")) %>%
+#   filter(full_species %in% species)
 
 # Haplorrhini
 fit <- metaMDS(dados[,4:13], distance = "gower", k = 2,
                trymax = 1000, maxit = 1000)
-png(
-  filename = "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/Haplorrhini_StressPlot.png",
-  width = 4000,        # largura em pixels
-  height = 3000,       # altura em pixels
-  res = 300            # resolução (dpi)
-)
+# png(
+#   filename = "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/Haplorrhini_StressPlot.png",
+#   width = 4000,        # largura em pixels
+#   height = 3000,       # altura em pixels
+#   res = 300            # resolução (dpi)
+# )
 stressplot(fit)
-dev.off()
+#dev.off()
 
 x = as.data.frame(vegan::scores(fit)$sites[,1])
 y = as.data.frame(vegan::scores(fit)$sites[,2])
@@ -115,7 +115,7 @@ data = data.frame(x, y, genus, dados$PARVORDER, dados$SOCIAL_ORGANIZATION, dados
                   dados$PROP_MALES_FEMALES, dados$DOMINANCE, dados$AGGRESSION,dados$ALL_MALE_GROUPS,
                   dados$FURTIVE_COPULATION, dados$INFANTICIDE, dados$MULTILEVEL_SOCIETY, dados$N_PAPERS)
 
-saveRDS(data, "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/Haplorrhini_MDS_Matings.RDS")
+#saveRDS(data, "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/Haplorrhini_MDS_Matings.RDS")
 
 # 1. Extract scores of NMDS
 scores_fit = as.data.frame(vegan::scores(fit)$sites) %>%
@@ -188,10 +188,10 @@ mds <- ggplot(scores_fit, aes(x = NMDS1, y = NMDS2, color = PARVORDER)) +
 
 mds       
 
-ggsave("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/Haplorrhini_MDS_Matings.png", plot = mds,
-       width = 14,    # largura em inches
-       height = 8,   # altura em inches
-       dpi = 200)    # resolução
+# ggsave("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/Haplorrhini_MDS_Matings.png", plot = mds,
+#        width = 14,    # largura em inches
+#        height = 8,   # altura em inches
+#        dpi = 200)    # resolução
 
 
 tocor = data.frame(scores_fit, dados$SOCIAL_ORGANIZATION, dados$MATING_SYSTEM, dados$PROP_MALES_FEMALES, 

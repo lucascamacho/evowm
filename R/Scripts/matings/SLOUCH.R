@@ -158,11 +158,14 @@ df_ou <- data.frame(
 
 df_ou <- df_ou[match(tree_c$tip.label, df_ou$genus), ]
 
+alpha_vals <- seq(0.01, 0.08, length.out = 20)
 fit_ou_size <- slouch.fit(
   phy = tree_c,
   response = df_ou$response,
   species =  df_ou$genus,
-  direct.cov = df_ou$size
+  direct.cov = df_ou$size,
+  a_values = alpha_vals
+  
 )
 plot(fit_ou_size)
 
@@ -525,7 +528,7 @@ df_ou <- data.frame(
 
 df_ou <- df_ou[match(tree_p$tip.label, df$mds_p.genus), ]
 
-alpha_vals <- seq(10, 100, length.out = 20)
+alpha_vals <- seq(0.01, 0.1, length.out = 20)
 fit_ou_integration <- slouch.fit(
   phy = tree_p,
   response = df_ou$response,
@@ -930,11 +933,13 @@ df_ou <- data.frame(
 
 df_ou <- df_ou[match(tree_genus$tip.label, df_ou$genus), ]
 
+alpha_vals <- seq(0.01, 0.2, length.out = 20)
 fit_ou_nmds1_nmds2_integration_size <- slouch.fit(
   phy = tree_genus,
   response = df_ou$response,
   species =  df_ou$genus,
-  direct.cov = df_ou[, c("nmds1", "nmds2", "integration", "size")]
+  direct.cov = df_ou[, c("nmds1", "nmds2", "integration", "size")],
+  a_values = alpha_vals
 )
 summary(fit_ou_nmds1_nmds2_integration_size)
 
