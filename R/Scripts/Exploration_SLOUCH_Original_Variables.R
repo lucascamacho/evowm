@@ -24,7 +24,7 @@ medias = readRDS("~/Dropbox/Doc/Code/evowm/R/Outputs/averages_PCS_autovalues_pri
 filename = "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
 tree = ape::read.nexus(filename)
 tree$tip.label[tree$tip.label == "Lagothrix_lagotricha"] <- "Lagothrix_lagothricha"
-species = mds_f$especies
+species = mds$especies
 tree = drop.tip(tree, setdiff(tree$tip.label, species))
 
 align_filtrado <- align[align$matings.especies %in% mds$especies, ]

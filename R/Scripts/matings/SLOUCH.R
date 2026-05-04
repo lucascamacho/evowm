@@ -167,7 +167,7 @@ fit_ou_size <- slouch.fit(
   a_values = alpha_vals
   
 )
-plot(fit_ou_size)
+summary(fit_ou_size)
 
 #save(fit_ou_size, file = "~/Dropbox/Doc/Code/evowm/R/Outputs/catarrhini_fit_OU_size.RData")
 
@@ -533,7 +533,7 @@ fit_ou_integration <- slouch.fit(
   phy = tree_p,
   response = df_ou$response,
   species =  df_ou$genus,
-  direct.cov = df_ou[, c("integration")],
+  direct.cov = df_ou$integration,
   a_values = alpha_vals
 )
 summary(fit_ou_integration)

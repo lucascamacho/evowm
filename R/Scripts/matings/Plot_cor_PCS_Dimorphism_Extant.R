@@ -71,8 +71,8 @@ ggsave("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/F_M_cor_PCS_Dimorphism_Extant
 ##########################
 # All values of aligns with SD and PCs 1 to 8
 # Seleciona as colunas
-cols <- 5:8
-titles <- paste("SD and PC", 1:4)
+cols <- 5:12
+titles <- paste("SD and PC", 1:8)
 
 df_long <- data %>%
   dplyr::select(all_of(cols)) %>%

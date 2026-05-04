@@ -101,6 +101,7 @@ for(i in 1:length(matings$genus)){
     # norm and alignment
     # Male bigger = norm is negative, Female is bigger = norm is positive
     normas_dimorf = norma(dimorf / size)
+    #normas[i] = norma(dimorf / size)
     normas[i] = abs(normas_dimorf) * sign(dimor_rel[i] - 1)
     #normas[i] = dimor_rel[i]
     
@@ -135,6 +136,7 @@ for(i in 1:length(matings$genus)){
     # norm and alignment
     # Male bigger = norm is negative, Female is bigger = norm is positive
     normas_dimorf = norma(dimorf / size)
+    #normas[i] = norma(dimorf / size)
     normas[i] = abs(normas_dimorf) * sign(dimor_rel[i] - 1)
     #normas[i] = dimor_rel[i]
     

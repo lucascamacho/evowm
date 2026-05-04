@@ -179,13 +179,14 @@ novo_df <- rbind(atuais, ancestrais)
 names(novo_df) = c("Species", "cor_iso_1", "cor_iso_2", "cor_iso_3", "cor_iso_4", "cor_iso_5", "cor_iso_6", "cor_iso_7", "cor_iso_8",
                             "cor_modules_1", "cor_modules_2", "cor_modules_3", "cor_modules_4", "cor_modules_5", "cor_modules_6", "cor_modules_7", "cor_modules_8")
 
-write.csv(novo_df, "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/cor_PCS_Iso_Mod.csv", row.names = FALSE)
+#write.csv(novo_df, "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/cor_PCS_Iso_Mod.csv", row.names = FALSE)
 
 #
 data = read.csv("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/cor_PCS_iso_mod.csv")
+data = data[1:43,]
 
-cols <- 2:5
-titles <- paste("Isometric and PC", 1:4)
+cols <- 2:9
+titles <- paste("Isometric and PC", 1:8)
 
 # Coloca os dados em formato longo
 df_long <- data %>%
@@ -230,10 +231,10 @@ p
 
 # Salva o gráfico em alta resolução
 ggsave(
-  "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/Hist_All_cor_PCS_Isometric.png",
-  plot = p,
-  width = 12,
-  height = 7,
-  dpi = 300
-)
+   "~/Dropbox/Doc/Code/evowm/R/Scripts/matings/Hist_All_cor_PCS_Isometric.png",
+   plot = p,
+   width = 12,
+   height = 7,
+   dpi = 300
+ )
 

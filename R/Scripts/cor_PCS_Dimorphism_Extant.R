@@ -85,8 +85,8 @@ for(i in 1:length(matings$especies)){
     # norm and alignment
     # Male bigger = norm is negative, Female is bigger = norm is positive
     normas_dimorf = norma(dimorf / size)
-    #normas[i] = abs(normas_dimorf) * sign(dimor_rel[i] - 1)
-    normas[i] = dimor_rel[i]
+    normas[i] = abs(normas_dimorf) * sign(dimor_rel[i] - 1)
+    #normas[i] = dimor_rel[i]
     
     align_1[i] = abs(corVector(unlist(pc_1), dimorf / size))
     align_2[i] = abs(corVector(unlist(pc_2), dimorf / size))
@@ -119,8 +119,8 @@ for(i in 1:length(matings$especies)){
     # norm and alignment
     # Male bigger = norm is negative, Female is bigger = norm is positive
     normas_dimorf = norma(dimorf / size)
-    #normas[i] = abs(normas_dimorf) * sign(dimor_rel[i] - 1)
-    normas[i] = dimor_rel[i]
+    normas[i] = abs(normas_dimorf) * sign(dimor_rel[i] - 1)
+    #normas[i] = dimor_rel[i]
     
     align_1[i] = abs(corVector(unlist(pc_1), dimorf / size))
     align_2[i] = abs(corVector(unlist(pc_2), dimorf / size))
