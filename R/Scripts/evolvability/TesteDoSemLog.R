@@ -69,12 +69,12 @@ for(i in 1:length(sigmas)){
     covar <- as.matrix(covar)
     
     # zero first eingenvector?
-    eig <- eigen(covar)
-    D <- diag(eig$values)
-    V <- eig$vectors
-    D2 <- D
-    D2[1,1]<- 0
-    covar <- V %*% D2 %*% t(V)
+    #eig <- eigen(covar)
+    #D <- diag(eig$values)
+    #V <- eig$vectors
+    #D2 <- D
+    #D2[1,1]<- 0
+    #covar <- V %*% D2 %*% t(V)
     
     # or remove it?
     #eig <- eigen(covar)
@@ -134,7 +134,7 @@ colnames(evolvas_error) <- c("Species", "Sexual_Dimorphism", "Evolvability", "Er
                              "Sigma_Value")
 
 #saveRDS(evolvas_error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
-evolvas_error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
+#evolvas_error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
 
 # plot
 p1 <- ggplot(evolvas_error, aes(x = Sexual_Dimorphism, y = Error_Evolvability)) +
