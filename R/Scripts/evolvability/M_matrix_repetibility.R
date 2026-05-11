@@ -124,3 +124,8 @@ for(sp in names(M_list)) {
   eps_list[[sp]] <- eps_samples
 }
 
+####
+error_samples <- readRDS("~/Dropbox/Doc/Data/error_samples.RDS")
+
+
+
