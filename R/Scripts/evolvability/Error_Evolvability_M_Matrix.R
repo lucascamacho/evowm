@@ -6,6 +6,9 @@ library(ggplot2)
 library(evolvability)
 library(evolqg)
 library(tidyverse)
+library(patchwork)
+library(ggbeeswarm)
+
 
 # 
 geomean = function(vector){
@@ -153,15 +156,17 @@ for(i in seq_along(species)){
 error <- do.call(rbind, results)
 rownames(error) <- NULL
 
-saveRDS(error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error.RDS")
-#readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error.RDS")
+#saveRDS(error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
+error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
 
 error_long <- error %>%
   dplyr::select(
     species,
     Dimorfism,
     Evolvability,
-    Evolvability_error_mean
+    Evolvability_error_mean,
+    Evolvability_error_q025,
+    Evolvability_error_q975
   ) %>%
   pivot_longer(
     cols = c(Evolvability, Evolvability_error_mean),
@@ -176,49 +181,32 @@ error_long <- error %>%
     )
   )
 
-ggplot(error_long,
-       aes(x = Evolvability_value,
-           y = Dimorfism,
-           color = Type)) +
+p1 <- ggplot(error_long, aes(x = Dimorfism, y = Evolvability_value)) +
   
-  # linhas ligando os pares
-  geom_segment(
-    data = error,
+  geom_quasirandom(width = 0.2, size = 3, alpha = 0.8) +
+  
+  # error bars só para Error-corrected
+  geom_errorbar(
+    data = subset(error_long, Type == "Error-corrected"),
     aes(
-      x = Evolvability,
-      xend = Evolvability_error_mean,
-      y = Dimorfism,
-      yend = Dimorfism
+      ymin = Evolvability_error_q025,
+      ymax = Evolvability_error_q975
     ),
-    inherit.aes = FALSE,
-    color = "grey75",
-    linewidth = 0.8,
-    alpha = 0.7
+    width = 0,
+    alpha = 0.5
   ) +
   
-  # pontos com jitter
-  geom_jitter(
-    width = 0.0006,
-    height = 0.03,
-    size = 3.5,
-    alpha = 0.9
-  ) +
-  
-  scale_color_manual(values = c(
-    "Observed" = "#1b9e77",
-    "Error-corrected" = "#d95f02"
-  )) +
-  
-  labs(
-    x = "Evolvability",
-    y = "Sexual dimorphism",
-    color = NULL,
-    title = "Observed vs error-corrected evolvability"
-  ) +
+  facet_wrap(~Type, scales = "free_y") +
   
   theme_classic(base_size = 14) +
-  theme(
-    legend.position = "top",
-    plot.title = element_text(face = "bold")
-  )
+  labs(x = "Sexual Dimorphism", y = "Evolvability")
 
+
+# Salva o gráfico em alta resolução
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Dimorphism_Error_NonError.png",
+  plot = p1,
+  width = 12,
+  height = 7,
+  dpi = 300
+)
