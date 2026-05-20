@@ -10,8 +10,27 @@ library(tidyverse)
 ###################################################################################
 # PLATYRRHINI
 ###################################################################################
+susan <- openxlsx::read.xlsx("~/Dropbox/Doc/Data/susan_double_measures.xlsx")
+susan <- susan[,1:87]
+
+#
+colnames(susan) <- gsub("\\$", "", colnames(susan))
+colnames(susan) <- make.unique(colnames(susan))
+
+#
 df <- openxlsx::read.xlsx("~/Dropbox/Doc/Data/double_measures_platyrrhini.xlsx")
 df <- df[,1:85]
+
+#
+colnames(df) <- gsub("\\$", "", colnames(df))
+colnames(df) <- make.unique(colnames(df))
+
+#
+setdiff(colnames(susan), colnames(df))
+susan <- susan[, colnames(susan) %in% colnames(df)]
+susan <- susan[, colnames(df)]
+identical(colnames(df), colnames(susan))
+df <- rbind(df, susan)
 
 # ----------------------------
 # 1. Limpar nomes (tirar $)
@@ -114,6 +133,16 @@ variancia_erro <- resultados %>%
 # 20 sp de Platyrrhini
 p_variancia_erro <- variancia_erro %>%
   filter(n > 1)
+
+contagem <- p_variancia_erro %>%
+  count(GENUS, SPECIES)
+
+p_variancia_erro <- p_variancia_erro %>%
+  inner_join(
+    contagem %>% filter(n >= 38),
+    by = c("GENUS", "SPECIES")
+  ) %>%
+  dplyr::select(-n)
 
 saveRDS(p_variancia_erro, "~/Dropbox/Doc/Data/p_variancia_erro.RDS")
 
@@ -381,7 +410,7 @@ meta_cols <- c(
   "MEASURE...21", "MUSEU"
 )
 
-measure_cols <- setdiff(names(df_filtrado), meta_cols)
+measure_cols <- setdiff(names(df_filtrado), c(meta_cols, "PTTSP"))
 
 df_filtrado[measure_cols] <- lapply(df_filtrado[measure_cols], as.numeric)
 df_filtrado[measure_cols] <- log1p(df_filtrado[measure_cols])
@@ -428,7 +457,7 @@ X <- c_variancia_erro %>%
   distinct(GENUS, SPECIES) %>%
   arrange(GENUS, SPECIES)
 
-#saveRDS(c_variancia_erro, "~/Dropbox/Doc/Data/c_variancia_erro.RDS")
+saveRDS(c_variancia_erro, "~/Dropbox/Doc/Data/c_variancia_erro.RDS")
 
 ####################################################################
 traits <- c(
@@ -450,17 +479,27 @@ data_c <- data_c %>%
   mutate(
     GENUS = str_to_title(str_to_lower(GENUS)),
     SPECIES = str_to_lower(SPECIES),
-    variavel = str_replace_all(variavel, "-", ""),
     variavel = str_to_upper(variavel)
   )
 
 # padronizar platyrrhini
 data_p <- data_p %>%
   mutate(
-    GENUS = str_to_title(str_to_lower(GENUS)),
-    SPECIES = str_to_lower(SPECIES),
     variavel = str_replace_all(variavel, "-", ""),
     variavel = str_to_upper(variavel)
+  )
+
+# padronizar nomes equivalentes
+data_p <- data_p %>%
+  mutate(
+    variavel = recode(
+      variavel,
+      "OPIBA" = "BAOPI",
+      "ASJP"  = "JPAS",
+      "LDOPI" = "OPILD",
+      "ASPT"  = "PTAS",
+      "LDBR"  = "BRLD"
+    )
   )
 
 # juntar datasets
@@ -519,11 +558,5 @@ for(sp_i in species_list){
   error_samples[[sp_i]] <- sims
 }
 
-
-# juntar
-data_all <- bind_rows(data_c2, data_p2) %>%
-  filter(variavel %in% traits)
-
-saveRDS(data_all, "~/Dropbox/Doc/Data/var_error.RDS")
 saveRDS(error_samples, "~/Dropbox/Doc/Data/error_samples.RDS")
 

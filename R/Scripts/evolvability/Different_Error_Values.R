@@ -24,7 +24,7 @@ vcv <- lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1
 names(vcv) <- gsub(".csv", replacement= "", temp)
 
 # Different errors
-sigmas <- seq(0.01, 0.4, length.out = 9)
+sigmas <- seq(0.1, 0.9, length.out = 3)
 
 medidas <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
 species <- medidas$Species
@@ -49,12 +49,12 @@ for(i in 1:length(sigmas)){
     covar <- as.matrix(covar)
     
     # zero first eingenvector?
-    eig <- eigen(covar)
-    D <- diag(eig$values)
-    V <- eig$vectors
-    D2 <- D
-    D2[1,1]<- 0
-    covar <- V %*% D2 %*% t(V)
+    #eig <- eigen(covar)
+    #D <- diag(eig$values)
+    #V <- eig$vectors
+    #D2 <- D
+    #D2[1,1]<- 0
+    #covar <- V %*% D2 %*% t(V)
     
     # or remove it?
     #eig <- eigen(covar)
@@ -91,7 +91,7 @@ for(i in 1:length(sigmas)){
     #
     results[[counter]] <- data.frame(
       Species = sp,
-      Sexual_Dimorphism = abs(norma(sd)) * sign(rat - 1),
+      Sexual_Dimorphism = norma(sd),
       Evolvability = evolv_normal,
       Error_Evolvability = evolv_error,
       Sigma_Value = error,
@@ -108,46 +108,44 @@ colnames(evolvas_error) <- c("Species", "Sexual_Dimorphism", "Evolvability", "Er
                              "Sigma_Value")
 
 #saveRDS(evolvas_error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
-evolvas_error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
+#evolvas_error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
 
 # plot
 p1 <- ggplot(evolvas_error, aes(x = Sexual_Dimorphism, y = Error_Evolvability)) +
-  geom_point() +
+  geom_point(size = 6, alpha = 0.8) +
   facet_wrap(~ Sigma_Value) +
   stat_poly_eq(
     aes(label = paste(..rr.label.., ..p.value.label.., sep = "~~~")),
     formula = y ~ x,
     parse = TRUE,
-    size = 5,
+    size = 7,
     label.x = "right"
   ) +
   labs(
     x = "Sexual Dimorphism",
-    y = "Evolvability Estimation",
+    y = "Evolvability Estimation"
   ) +
   geom_smooth(method = "lm", se = TRUE) +
-  geom_hline(yintercept = 0, col = "red", linetype = "dashed") +
   theme_classic(base_size = 14) +
   theme(
-    panel.border = element_rect(color = "black", fill = NA),
-    legend.position = "none",
-    panel.grid = element_blank(),
-    plot.title = element_text(face = "bold", hjust = 0.5, size = 16),
-    axis.title = element_text(size = 16, face = "bold"),
-    axis.title.x = element_text(size = 16, face = "bold"),
-    axis.title.y = element_text(size = 16, face = "bold"),
-    axis.text = element_text(size = 14)
+    axis.title = element_text(size = 28, face = "bold"),
+    axis.text = element_text(size = 24, face = "bold", colour = "black"),
+    legend.title = element_text(size = 24, face = "bold"),
+    legend.text = element_text(size = 24, face = "bold"),
+    
+    # 👇 ISSO AQUI
+    strip.text = element_text(size = 24, face = "bold")
   )
 
 p1
 
-# ggsave(
-#   "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Sygmas_Different_Values.png",
-#   plot = p1,
-#   width = 12,
-#   height = 7,
-#   dpi = 300
-# )
+ ggsave(
+   "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Sygmas_Different_Values.png",
+   plot = p1,
+   width = 12,
+   height = 7,
+   dpi = 300
+ )
 
 # right names
 evolvas_error$Species <- gsub("_", " ", evolvas_error$Species)

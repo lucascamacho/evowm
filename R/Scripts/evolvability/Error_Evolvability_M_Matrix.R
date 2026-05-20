@@ -1,3 +1,9 @@
+# MICROSCRIBE AND POLHEMUS MEDE A MESMA COISA COM DIFENRENTES SIZES
+# M MATRIX E GRANDE 
+# LINEAR MODEL FOR SIZE AND PESSOA QUE MEDIU USANDO TODOS OS VALORES
+# COEF OF DETERMINATION (1 - r2) OK
+# MOSTRAR O PLOT ORIGINAL COM SIZE NO BANNER OK
+
 # estimating k1 and k2
 setwd("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability")
 
@@ -8,12 +14,29 @@ library(evolqg)
 library(tidyverse)
 library(patchwork)
 library(ggbeeswarm)
-
-
+library(ggrepel)
+library(ggpmisc)
 # 
 geomean = function(vector){
   g = exp(mean(log(vector)))
   return(g)
+}
+
+#
+autonomia <- function(R) {
+  diag_s <- numeric(ncol(R))
+  
+  for (i in 1:ncol(R)) {
+    r2 <- summary(lm(R[, i] ~ R[, -i]))$r.squared
+    diag_s[i] <- r2
+  }
+  
+  mean(1 - diag_s)
+}
+
+integration_index <- function(R) {
+  a <- autonomia(R)
+  1 - a
 }
 
 #
@@ -42,7 +65,6 @@ species = append(species, "Homo_sapiens")
 tree = drop.tip(tree, setdiff(tree$tip.label, species))
 
 species <- species[match(tree$tip.label, species)]
-species <- species[1:49]
 
 #
 results <- list()  # lista vazia
@@ -105,8 +127,12 @@ for(i in seq_along(species)){
   
   # 
   rownames(covar) <- colnames(covar) <- NULL
-  integ <- CalcEigenVar(as.matrix(covar))
- 
+  correl <- cov2cor(covar)
+  
+  integ <- CalcEigenVar(as.matrix(correl))
+  #integ <- unname(1 - evolvability::evolvabilityBeta(correl, dimor_norm)$a)
+  #integ <- integration_index(correl)
+  
   #
   mat_errors <- error_samples[[sp]]
   measure_cols <- c(
@@ -157,37 +183,31 @@ error <- do.call(rbind, results)
 rownames(error) <- NULL
 
 #saveRDS(error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
-error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
+#error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
 
 error_long <- error %>%
   dplyr::select(
     species,
     Dimorfism,
     Evolvability,
-    Evolvability_error_mean,
     Evolvability_error_q025,
-    Evolvability_error_q975
+    Evolvability_error_q975,
+    Integration
   ) %>%
-  pivot_longer(
-    cols = c(Evolvability, Evolvability_error_mean),
-    names_to = "Type",
-    values_to = "Evolvability_value"
-  ) %>%
-  mutate(
-    Type = recode(
-      Type,
-      "Evolvability" = "Observed",
-      "Evolvability_error_mean" = "Error-corrected"
-    )
+  rename(
+    Evolvability_value = Evolvability
   )
 
-p1 <- ggplot(error_long, aes(x = Dimorfism, y = Evolvability_value)) +
+p1 <- ggplot(
+  error_long,
+  aes(
+    x = Dimorfism,
+    y = Evolvability_value
+  )
+) +
   
-  geom_quasirandom(width = 0.2, size = 3, alpha = 0.8) +
-  
-  # error bars só para Error-corrected
+  # error bars
   geom_errorbar(
-    data = subset(error_long, Type == "Error-corrected"),
     aes(
       ymin = Evolvability_error_q025,
       ymax = Evolvability_error_q975
@@ -196,17 +216,115 @@ p1 <- ggplot(error_long, aes(x = Dimorfism, y = Evolvability_value)) +
     alpha = 0.5
   ) +
   
-  facet_wrap(~Type, scales = "free_y") +
+  # pontos
+  geom_quasirandom(
+    width = 0.02,
+    size = 6,
+    alpha = 0.8
+  ) +
+  
+  # regressão
+  geom_smooth(
+    method = "lm",
+    se = TRUE
+  ) +
+  
+  # R²
+  stat_poly_eq(
+    aes(label = paste(..rr.label..)),
+    formula = y ~ x,
+    parse = TRUE,
+    label.x = "right",
+    label.y = "top",
+    size = 10
+  ) +
   
   theme_classic(base_size = 14) +
-  labs(x = "Sexual Dimorphism", y = "Evolvability")
+  
+  theme(
+    axis.title = element_text(size = 28, face = "bold"),
+    axis.text = element_text(size = 24, face = "bold"),
+    legend.title = element_text(size = 24, face = "bold"),
+    legend.text = element_text(size = 24, face = "bold")
+  ) +
+  
+  labs(
+    x = "Sexual Dimorphism",
+    y = "Evolvability"
+  )
 
+p1
 
-# Salva o gráfico em alta resolução
-ggsave(
-  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Dimorphism_Error_NonError.png",
-  plot = p1,
-  width = 12,
-  height = 7,
-  dpi = 300
-)
+# # Salva o gráfico em alta resolução
+   ggsave(
+     "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Dimorphism_Error_NonError.png",
+      plot = p1,
+      width = 12,
+      height = 7,
+      dpi = 300
+   )
+
+  p2 <- ggplot(
+    error_long,
+    aes(
+      x = Integration,
+      y = Evolvability_value
+    )
+  ) +
+    
+    geom_errorbar(
+      aes(
+        ymin = Evolvability_error_q025,
+        ymax = Evolvability_error_q975
+      ),
+      width = 0,
+      alpha = 0.5
+    ) +
+    
+    geom_point(
+      size = 6,
+      alpha = 0.8
+    ) +
+    
+    geom_smooth(
+      method = "lm",
+      se = TRUE
+    ) +
+    
+    stat_poly_eq(
+      aes(label = paste(..rr.label..)),
+      formula = y ~ x,
+      parse = TRUE,
+      label.x = "left",
+      label.y = "top",
+      size = 10
+    ) +
+    
+    theme_classic(base_size = 14) +
+    
+    theme(
+      axis.title = element_text(size = 28, face = "bold"),
+      axis.text = element_text(
+        size = 24,
+        face = "bold",
+        colour = "black"
+      ),
+      legend.title = element_text(size = 24, face = "bold"),
+      legend.text = element_text(size = 24, face = "bold")
+    ) +
+    
+    labs(
+      x = "Integration Index",
+      y = "Evolvability"
+    )
+  
+  p2
+
+  ggsave(
+    "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Integration_Error_NonError.png",
+    plot = p2,
+    width = 12,
+    height = 7,
+    dpi = 300
+  )
+  
