@@ -108,32 +108,32 @@ colnames(evolvas_error) <- c("Species", "Sexual_Dimorphism", "Evolvability", "Er
                              "Sigma_Value")
 
 #saveRDS(evolvas_error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
-#evolvas_error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
+evolvas_error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
 
 # plot
 p1 <- ggplot(evolvas_error, aes(x = Sexual_Dimorphism, y = Error_Evolvability)) +
   geom_point(size = 6, alpha = 0.8) +
-  facet_wrap(~ Sigma_Value) +
+  facet_wrap("Sigma_Value") +
   stat_poly_eq(
     aes(label = paste(..rr.label.., ..p.value.label.., sep = "~~~")),
     formula = y ~ x,
     parse = TRUE,
-    size = 7,
+    size = 10,
     label.x = "right"
   ) +
   labs(
+    title = "Evolvability and Sexual Dimorphism with Different Sygma Values",
     x = "Sexual Dimorphism",
     y = "Evolvability Estimation"
   ) +
   geom_smooth(method = "lm", se = TRUE) +
   theme_classic(base_size = 14) +
   theme(
+    plot.title = element_text(size = 28, face = "bold", hjust = 0.5, margin = margin(b = 20)),
     axis.title = element_text(size = 28, face = "bold"),
     axis.text = element_text(size = 24, face = "bold", colour = "black"),
     legend.title = element_text(size = 24, face = "bold"),
     legend.text = element_text(size = 24, face = "bold"),
-    
-    # 👇 ISSO AQUI
     strip.text = element_text(size = 24, face = "bold")
   )
 
@@ -142,7 +142,7 @@ p1
  ggsave(
    "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Sygmas_Different_Values.png",
    plot = p1,
-   width = 12,
+   width = 14,
    height = 7,
    dpi = 300
  )
