@@ -133,8 +133,19 @@ for(i in seq_along(species)){
   correl <- cov2cor(covar)
   
   #integ <- CalcEigenVar(as.matrix(correl))
-  integ <- unname(1 - evolvability::evolvabilityBeta(correl, dimor_norm)$a)
+  #integ <- unname(1 - evolvability::evolvabilityBeta(correl, dimor_norm)$i)
 
+  # garantir que é vetor coluna
+  beta <- as.matrix(dimor_norm)
+  
+  # flexibility
+  flexibility <- as.numeric(
+    t(beta) %*% correl %*% beta /
+      sqrt(t(beta) %*% correl %*% correl %*% beta)
+  )
+  
+  integ <- 1 - flexibility
+  
   #
   mat_errors <- error_samples[[sp]]
   measure_cols <- c(

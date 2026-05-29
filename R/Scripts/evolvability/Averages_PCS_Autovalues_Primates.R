@@ -58,7 +58,7 @@ for(i in 1:n_cata){
   species_subset = msrs[which(msrs$GENUS == genus), ]
   species_subset = species_subset[which(species_subset$SPECIES == sp), ]
 
-    # separate M and F
+  # separate M and F
   sub_sexes_m = species_subset[which(species_subset$SEX == "male"), ]
   sub_sexes_f = species_subset[which(species_subset$SEX == "female"), ]
   
