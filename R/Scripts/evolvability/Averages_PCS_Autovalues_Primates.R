@@ -57,7 +57,8 @@ for(i in 1:n_cata){
   
   species_subset = msrs[which(msrs$GENUS == genus), ]
   species_subset = species_subset[which(species_subset$SPECIES == sp), ]
-
+  print(nrow(species_subset))
+  
   # separate M and F
   sub_sexes_m = species_subset[which(species_subset$SEX == "male"), ]
   sub_sexes_f = species_subset[which(species_subset$SEX == "female"), ]
@@ -174,6 +175,8 @@ for(i in 1:n_platy){
   species_subset = msrs[which(msrs$GENUS. == genus), ]
   species_subset = species_subset[which(species_subset$SPECIES. == sp), ]
 
+  print(nrow(species_subset))
+  
   # separate M and F
   sub_sexes_m = species_subset[which(species_subset$SEX4. == "M"), ]
   sub_sexes_f = species_subset[which(species_subset$SEX4. == "F"), ]
