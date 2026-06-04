@@ -75,10 +75,9 @@ for(i in seq_along(species)){
   }
   
   # 
-  size <- (geomean(medidas$Machos) + geomean(medidas$Fêmeas)) / 2
-  size_vec <- (medidas$Machos + medidas$Fêmeas) / 2
-  
-  
+  size_vec <- medidas$Machos - medidas$Fêmeas
+  size <- mean(size_vec)
+
   #
   dimor <- medidas$Machos - medidas$Fêmeas
   
@@ -92,18 +91,21 @@ for(i in seq_along(species)){
   }
    
   #
-  eig <- eigen(covar)
-  D <- diag(eig$values)
-  V <- eig$vectors
-  D2 <- D
-  D2[1,1] <- min(eig$values[-1]) * 1e-8
-  covar <- V %*% D2 %*% t(V)
+  #eig <- eigen(covar)
+  #D <- diag(eig$values)
+  #V <- eig$vectors
+  #D2 <- D
+  #D2[1,1] <- min(eig$values[-1]) * 1e-8
+  #covar <- V %*% D2 %*% t(V)
   
   #
   dimor_norm <- dimor / sqrt(sum(dimor ^ 2))
   
   # 
   evolv <- as.numeric(t(dimor_norm) %*% covar %*% dimor_norm)
+  
+  #size_norm <- size_vec / sqrt(sum(size_vec ^ 2))
+  #evolv <- as.numeric(t(size_norm) %*% covar %*% size_norm)
   
   eig <- eigen(covar)
   pmax <- eig$vectors[, 1]
@@ -168,6 +170,7 @@ for(i in seq_along(species)){
     Mean_Evolvability = sum(diag(covar)) / ncol(covar),
     
     Conditional_Evolvability = 1 / (t(dimor_norm) %*% solve(covar) %*% dimor_norm),
+    #Conditional_Evolvability = 1 / (t(size_norm) %*% solve(covar) %*% size_norm),
     Mean_Conditional_Evolvability = (length(eigen(covar)$values) - 1) / sum(1 / eigen(covar)$values[-1]),
     
     Pmax = e_pmax,
@@ -208,7 +211,8 @@ error_long <- error %>%
     Pmax,
     Integration,
     Evolv_Dimor_Pmax,
-    Evolv_Size
+    Evolv_Size,
+    Size
   ) %>%
   rename(
     Evolvability_value = Evolvability
@@ -226,14 +230,14 @@ p1 <- ggplot(
 ) +
   
   # error bars
-  geom_errorbar(
-    aes(
-      ymin = Evolvability_error_q025,
-      ymax = Evolvability_error_q975
-    ),
-    width = 0,
-    alpha = 0.5
-  ) +
+  #geom_errorbar(
+  #  aes(
+  #   ymin = Evolvability_error_q025,
+  #    ymax = Evolvability_error_q975
+  # ),
+  #  width = 0,
+  #  alpha = 0.5
+  #) +
   
   # pontos
   geom_quasirandom(
@@ -441,7 +445,6 @@ plot_ce <- bind_rows(
     )
 )
 
-
 p4 <- ggplot() +
   
   geom_segment(
@@ -522,19 +525,19 @@ p5 = ggplot(error_long, aes(x = Dimorfism, y = Evolvability_value)) +
 # Para visualizar:
 p5
 
-# ggsave(
-#   "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_semPmax_Dimorphism.png",
-#   plot = p5,
-#   width = 16,
-#   height = 7,
-#   dpi = 300
-# )
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_semPmax_Dimorphism.png",
+  plot = p5,
+  width = 16,
+  height = 7,
+  dpi = 300
+)
 
 p6 = ggplot(error_long, aes(x = Dimorfism, y = Conditional_Evolvability)) +
   
   geom_point(size = 6, alpha = 0.9) +
   
-  #scale_y_log10() +
+  scale_y_log10() +
   
   theme_classic(base_size = 14) +
   
@@ -557,8 +560,8 @@ p6 = ggplot(error_long, aes(x = Dimorfism, y = Conditional_Evolvability)) +
     aes(label = paste(..rr.label..)),
     formula = y ~ x,
     parse = TRUE,
-    label.x = "left",
-    label.y = "top",
+    label.x = "right",
+    label.y = "bottom",
     size = 10
   ) +
   
@@ -567,7 +570,7 @@ p6 = ggplot(error_long, aes(x = Dimorfism, y = Conditional_Evolvability)) +
     y = "Conditional Evolvability (log scale)"
   )
 
-# Para visualizar:
+# Para visualizar
 p6
 
 ggsave(
@@ -576,4 +579,7 @@ ggsave(
   width = 16,
   height = 7,
   dpi = 300
-  )
+)
+
+plot(error$Evolv_Size, error$Evolvability)
+
