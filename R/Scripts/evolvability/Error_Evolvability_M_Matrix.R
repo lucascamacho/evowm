@@ -41,7 +41,6 @@ tree = read.nexus(filename)
 species = names(vcv)
 species = append(species, "Homo_sapiens")
 tree = drop.tip(tree, setdiff(tree$tip.label, species))
-
 species <- species[match(tree$tip.label, species)]
 
 #
@@ -91,13 +90,14 @@ for(i in seq_along(species)){
     cat("   Sem covar no vcv para:", sp, "\n")
     next 
   }
-  
-   eig <- eigen(covar)
-   D <- diag(eig$values)
-   V <- eig$vectors
-   D2 <- D
-   D2[1,1] <- min(eig$values[-1]) * 1e-8
-   covar <- V %*% D2 %*% t(V)
+   
+  #
+  eig <- eigen(covar)
+  D <- diag(eig$values)
+  V <- eig$vectors
+  D2 <- D
+  D2[1,1] <- min(eig$values[-1]) * 1e-8
+  covar <- V %*% D2 %*% t(V)
   
   #
   dimor_norm <- dimor / sqrt(sum(dimor ^ 2))
@@ -212,10 +212,10 @@ error_long <- error %>%
   ) %>%
   rename(
     Evolvability_value = Evolvability
-  )
+)
 
-plot(error$Evolvability, error$Evolv_Dimor_Pmax)
-summary(lm(error$Evolvability ~ error$Evolv_Dimor_Pmax))
+#plot(error$Evolvability, error$Evolv_Dimor_Pmax)
+#summary(lm(error$Evolvability ~ error$Evolv_Dimor_Pmax))
 
 p1 <- ggplot(
   error_long,
@@ -276,14 +276,14 @@ p1 <- ggplot(
 
 p1
 
-# # Salva o gráfico em alta resolução
-   # ggsave(
-   #   "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Dimorphism_Error_NonError.png",
-   #    plot = p1,
-   #    width = 16,
-   #    height = 7,
-   #    dpi = 300
-   # )
+# Salva o gráfico em alta resolução
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Dimorphism_Error_NonError.png",
+  plot = p1,
+  width = 16,
+  height = 7,
+  dpi = 300
+)
 
 p2 <- ggplot(
     error_long,
@@ -343,16 +343,15 @@ p2 <- ggplot(
   
 p2
 
-# ggsave(
-#    "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Integration_Pmax_Error_NonError.png",
-#    plot = p2,
-#    width = 14,
-#    height = 7,
-#    dpi = 300
-# )
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Integration_Pmax_Error_NonError.png",
+  plot = p2,
+  width = 14,
+  height = 7,
+  dpi = 300
+)
 
 plot_e <- bind_rows(
-  
   error_long %>%
     transmute(
       species,
@@ -416,16 +415,15 @@ p3 <- ggplot() +
 
 p3  
 
-#ggsave(
-#   "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Mean_Dimorphism.png",
-#   plot = p3,
-#   width = 16,
-#   height = 7,
-#   dpi = 300
-#)
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Mean_Dimorphism.png",
+  plot = p3,
+  width = 16,
+  height = 7,
+  dpi = 300
+)
 
 plot_ce <- bind_rows(
-  
   error_long %>%
     transmute(
       species,
@@ -490,13 +488,13 @@ p4 <- ggplot() +
 
 p4
 
-#ggsave(
-#  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Conditional_Evolvability_Mean_Dimorphism.png",
-#  plot = p4,
-#  width = 16,
-#  height = 7,
-#  dpi = 300
-#)
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Conditional_Evolvability_Mean_Dimorphism.png",
+  plot = p4,
+  width = 16,
+  height = 7,
+  dpi = 300
+)
 
 p5 = ggplot(error_long, aes(x = Dimorfism, y = Evolvability_value)) +
   
@@ -572,11 +570,10 @@ p6 = ggplot(error_long, aes(x = Dimorfism, y = Conditional_Evolvability)) +
 # Para visualizar:
 p6
 
-# ggsave(
-#   "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Conditional_Evolvability_Dimorphism.png",
-#   plot = p6,
-#   width = 16,
-#   height = 7,
-#   dpi = 300
-# )
-
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Conditional_Evolvability_Dimorphism.png",
+  plot = p6,
+  width = 16,
+  height = 7,
+  dpi = 300
+  )
