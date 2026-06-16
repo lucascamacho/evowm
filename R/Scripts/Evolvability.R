@@ -18,6 +18,44 @@ geomean = function(vector){
   return(g)
 }
 
+Evolvability <- function(cov.matrix, beta.mat = NULL, iterations = 1000, size_skull) {
+  # Funções auxiliares internas
+  Norm <- function(x) {
+    sqrt(sum(x * x))
+  }
+  
+  Normalize <- function(x) {
+    x / Norm(x)
+  }
+  
+  # Número de traços
+  num.traits <- dim(cov.matrix)[1]
+  
+  # Se beta.mat não for fornecida, sorteia vetores aleatórios e normaliza
+  if (is.null(beta.mat)) {
+    beta.mat <- array(rnorm(num.traits * iterations), c(num.traits, iterations))
+    beta.mat <- apply(beta.mat, 2, Normalize)
+  }
+  
+  # Calcula evolvabilidade (resposta)
+  respostas <- diag(t(beta.mat) %*% cov.matrix %*% beta.mat)
+  
+  # Métricas
+  respostas_pure <- mean(respostas)
+  respostas_normal <- mean(respostas / size_skull)
+  icv <- sd(respostas) / mean(respostas)
+  icv_normal <- icv / size_skull
+  
+  # Retorna lista com resultados
+  return(list(
+    respostas = respostas,
+    respostas_normal = respostas_normal,
+    icv = icv,
+    icv_normal = icv_normal,
+    respostas_pure = respostas_pure
+  ))
+}
+
 # read all VCV matrices
 setwd("~/Dropbox/Doc/Data/vcv/")
 temp = list.files(pattern = "*.csv")
@@ -63,11 +101,7 @@ for(i in seq_along(matings$especies)){
     cat("   Sem medidas para:", sp, "\n")
     next 
   }
-  
-  if (is.null(covar)) { 
-    cat("   Sem covar no vcv para:", sp, "\n")
-    next 
-  }
+
   
   # se não tem medidas, pula
   if(is.null(medidas)){
@@ -80,38 +114,37 @@ for(i in seq_along(matings$especies)){
   }
   
   # cálculos
-  # tam_cra <- geomean(medidas$Machos)
   size <- (geomean(medidas$Machos) + geomean(medidas$Fêmeas)) / 2
-  #size <- (geomean(log(medidas$Machos)) + geomean(log(medidas$Fêmeas))) / 2
-  # size <- ((log(medidas$Machos[2]) + log(medidas$Fêmeas[2])) /2) +
-  # ((log(medidas$Machos[7]) + log(medidas$Fêmeas[7])) /2) +
-  # ((log(medidas$Machos[10]) + log(medidas$Fêmeas[10])) /2) +
-  # ((log(medidas$Machos[34]) + log(medidas$Fêmeas[34])) /2)
-  
-  # dimor <- (medidas$Machos - medidas$Fêmeas) / size
-  dimor <- medidas$Machos - medidas$Fêmeas
-  # dimor <- log(medidas$Machos) - log(medidas$Fêmeas)
+
   # calcula médias dos traits
-  #medias_por_trait <- (medidas$Machos + medidas$Fêmeas) / 2
-  #medias_por_trait <- as.numeric(medias_por_trait)   # garante vetor numérico
+  medias_por_trait <- (medidas$Machos + medidas$Fêmeas) / 2
+  medias_por_trait <- as.numeric(medias_por_trait)
   
   # padronizar matriz
   covar <- vcv[[sp]]
   covar <- as.matrix(covar)                          # garante matriz numérica
-  #mean_prod <- outer(medias_por_trait, medias_por_trait, "*")   # matriz com produtos das médias
-  #mat_scaled <- covar / mean_prod   # padroniza tudo
-  #diag(mat_scaled) <- diag(covar) / (medias_por_trait ^ 2)   # substitui a diagonal (variâncias / média ^ 2)
+  mean_prod <- outer(medias_por_trait, medias_por_trait, "*") 
+  mat_scaled <- covar / mean_prod   # padroniza tudo
+  diag(mat_scaled) <- diag(covar) / (medias_por_trait ^ 2)   
+  covar <- mat_scaled
+  
+  if (is.null(covar)) { 
+    cat("   Sem covar no vcv para:", sp, "\n")
+    next 
+  }
+  
+  rownames(covar) <- colnames(covar) <- NULL
   
   # normalizações
+  dimor <- medidas$Machos - medidas$Fêmeas
   dimor_norm <- dimor / sqrt(sum(dimor ^ 2))
   
   # evolvability
   resposta <- as.matrix(covar) %*% as.vector(dimor_norm)
   evolv <- sum((resposta * dimor_norm) / (size ^ 2))
-  #evolv = (diag(t(dimor_norm) %*% covar %*% dimor_norm)) / (dimor_norm ^ 2)
-  #lambda <- 1e-6
-  #covar_reg <- covar + diag(lambda, nrow(covar))
-  #cond = 1 / diag(t(dimor_norm) %*% solve(covar_reg) %*% dimor_norm)
+  
+  evolv_media = unname(MeanMatrixStatistics(covar)[6])
+  evolv_var = var(Evolvability(covar, size_skull = size)$respostas)
   
   # avg_evolvability OK
   avg_evolvability = sum(diag(covar)) / ncol(covar)
@@ -129,8 +162,10 @@ for(i in seq_along(matings$especies)){
   
   # integration OK
   rownames(covar) <- colnames(covar) <- NULL
-  integ <- CalcEigenVar(cov2cor(covar))
-  
+  integ <- CalcEigenVar(covar)
+  integ2 <- CalcR2(cov2cor(covar))
+  integ_media = 1 - unname(MeanMatrixStatistics(covar))[8] # mesmos valores para cor e cov
+
   # salva numa linha
   results[[sp]] <- data.frame(
     Species = sp,
@@ -142,7 +177,11 @@ for(i in seq_along(matings$especies)){
     Average_Evolvability = avg_evolvability,
     Ratio_Peak_Mean = ratio_peak_mean,
     Contribution = contrib[1],
-    Maior_Lambda = maior_lambda
+    Maior_Lambda = maior_lambda,
+    Evolvability_Media = evolv_media,
+    Evolvability_Variance = evolv_var,
+    Integration_Media = integ_media,
+    Integration_R2 = integ2
   )
 }
 
@@ -151,11 +190,104 @@ evolvas <- do.call(rbind, results)
 rownames(evolvas) <- NULL
 
 # save results
-saveRDS(evolvas, file = "~/Dropbox/Doc/Code/evowm/R/Outputs/Evolvability.RDS")
+#saveRDS(evolvas, file = "~/Dropbox/Doc/Code/evowm/R/Outputs/Evolvability.RDS")
 #evolvas = readRDS("~/Dropbox/Doc/Code/evowm/R/Outputs/Evolvability.RDS")
 
 evolvas <- evolvas[match(tree$tip.label, evolvas$Species), ]
 evolvas$genus <- factor(evolvas$Species, levels = tree$tip.label)
+
+# dimorfismo
+plot(evolvas$Integration, evolvas$Evolvability)
+
+# 1 - autonomy media
+plot(evolvas$Integration_Media, evolvas$Evolvability_Media)
+plot(evolvas$Integration_Media, evolvas$Evolvability_Variance)
+
+#EigenVar
+plot(evolvas$Integration, evolvas$Evolvability_Variance)
+plot(evolvas$Integration, evolvas$Evolvability_Media)
+
+p <- ggplot(
+  evolvas,
+  aes(
+    x = Dimorfism,
+    y = Evolvability
+  )
+) +
+  
+  geom_point(
+    size = 6,
+    alpha = 0.8
+  ) +
+  
+  geom_smooth(
+    method = "lm",
+    se = TRUE
+  ) +
+  
+  stat_poly_eq(
+    aes(label = paste(..rr.label..)),
+    formula = y ~ x,
+    parse = TRUE,
+    label.x = "left",
+    label.y = "top",
+    size = 10
+  ) +
+  
+  theme_classic(base_size = 14) +
+  
+  theme(
+    plot.title = element_text(
+      size = 28,
+      face = "bold",
+      hjust = 0.5,
+      margin = margin(b = 20)
+    ),
+    axis.title = element_text(
+      size = 28,
+      face = "bold"
+    ),
+    axis.text = element_text(
+      size = 24,
+      face = "bold",
+      colour = "black"
+    ),
+    legend.title = element_text(
+      size = 24,
+      face = "bold"
+    ),
+    legend.text = element_text(
+      size = 24,
+      face = "bold"
+    )
+  ) +
+  
+  labs(
+    x = "Global Integration",
+    y = "Average Evolvability"
+  )
+
+p
+
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Urgente6_Evolvability_Integration_Pmax_Error_NonError.png",
+  plot = p1,
+  width = 14,
+  height = 7,
+  dpi = 300
+)
+
+cor_matrix <- cor(
+  evolvas[, c("Integration", "Integration_Media", "Integration_R2")],
+  use = "complete.obs",
+  method = "pearson"
+)
+
+cor_matrix
+
+# CORRELACAO ENTRE INTEGRACAO E 1 - AUTONOMIA  OK
+# CONTROLAR A MATRIZ DE COVARIANCIA
+
 
 p1 = ggplot(evolvas, aes(x = Species, y = Evolvability)) +
      geom_col() +

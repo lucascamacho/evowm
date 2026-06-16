@@ -1,6 +1,6 @@
 # estimating k1 and k2
 setwd("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability")
-
+  
 library(ape)
 library(ggplot2)
 library(evolvability)
@@ -11,285 +11,272 @@ library(ggbeeswarm)
 library(ggrepel)
 library(ggpmisc)
 library(MASS)
-
+  
+Evolvability <- function(cov.matrix, beta.mat = NULL, iterations = 1000, size_skull) {
+  # Funções auxiliares internas
+  Norm <- function(x) {
+    sqrt(sum(x * x))
+  }
+  
+  Normalize <- function(x) {
+    x / Norm(x)
+  }
+  
+  # Número de traços
+  num.traits <- dim(cov.matrix)[1]
+  
+  # Se beta.mat não for fornecida, sorteia vetores aleatórios e normaliza
+  if (is.null(beta.mat)) {
+    beta.mat <- array(rnorm(num.traits * iterations), c(num.traits, iterations))
+    beta.mat <- apply(beta.mat, 2, Normalize)
+  }
+  
+  # Calcula evolvabilidade (resposta)
+  respostas <- diag(t(beta.mat) %*% cov.matrix %*% beta.mat)
+  
+  # Métricas
+  respostas_pure <- mean(respostas)
+  respostas_normal <- mean(respostas / size_skull)
+  icv <- sd(respostas) / mean(respostas)
+  icv_normal <- icv / size_skull
+  
+  # Retorna lista com resultados
+  return(list(
+    respostas = respostas,
+    respostas_normal = respostas_normal,
+    icv = icv,
+    icv_normal = icv_normal,
+    respostas_pure = respostas_pure
+  ))
+}
+  
 # 
 geomean = function(vector){
-  g = exp(mean(log(vector)))
-  return(g)
-}
-
-#
-prod_interno = function(x, y) sum(x * y)
-norma = function(x) sqrt(prod_interno(x, x))
-
-#
-setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
-temp <- list.files(pattern = "*.csv")
-vcv <- lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
-names(vcv) <- gsub(".csv", replacement= "", temp)
-
-#
-error_samples <- readRDS("~/Dropbox/Doc/Data/error_samples.RDS")
-names(error_samples) <- gsub(" ", "_", names(error_samples))
-
-#
-medias = readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
-
-#
-filename = "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
-tree = read.nexus(filename)
-species = names(vcv)
-species = append(species, "Homo_sapiens")
-tree = drop.tip(tree, setdiff(tree$tip.label, species))
-species <- species[match(tree$tip.label, species)]
-
-#
-results <- list()  # lista vazia
-
-for(i in seq_along(species)){
-  sp <- species[i]
-  cat("Rodando:", sp, "\n")   #
-  
-  medidas <- medias$ByTrait_Averages[[sp]]
-  
-  # 
-  if (is.null(medidas)) { 
-    cat("   Sem medidas para:", sp, "\n")
-    next 
-  }
-
-  # 
-  if(is.null(medidas)){
-    next
-  }
-  
-  # 
-  if(!(sp %in% names(vcv))){
-    next
+    g = exp(mean(log(vector)))
+    return(g)
   }
   
   #
-  if(!(sp %in% names(error_samples))){
-    cat("   Sem error_samples para:", sp, "\n")
-    next
-  }
-  
-  # 
-  size_vec <- medidas$Machos - medidas$Fêmeas
-  size <- mean(size_vec)
-
-  #
-  dimor <- medidas$Machos - medidas$Fêmeas
+  prod_interno = function(x, y) sum(x * y)
+  norma = function(x) sqrt(prod_interno(x, x))
   
   #
-  covar <- vcv[[sp]]
-  covar <- as.matrix(covar)
-  
-  if (is.null(covar)) { 
-    cat("   Sem covar no vcv para:", sp, "\n")
-    next 
-  }
-   
-  #
-  #eig <- eigen(covar)
-  #D <- diag(eig$values)
-  #V <- eig$vectors
-  #D2 <- D
-  #D2[1,1] <- min(eig$values[-1]) * 1e-8
-  #covar <- V %*% D2 %*% t(V)
+  setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
+  temp <- list.files(pattern = "*.csv")
+  vcv <- lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
+  names(vcv) <- gsub(".csv", replacement= "", temp)
   
   #
-  dimor_norm <- dimor / sqrt(sum(dimor ^ 2))
+  error_samples <- readRDS("~/Dropbox/Doc/Data/error_samples.RDS")
+  names(error_samples) <- gsub(" ", "_", names(error_samples))
   
-  # 
-  evolv <- as.numeric(t(dimor_norm) %*% covar %*% dimor_norm)
+  #
+  medias = readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
   
-  #size_norm <- size_vec / sqrt(sum(size_vec ^ 2))
-  #evolv <- as.numeric(t(size_norm) %*% covar %*% size_norm)
+  #
+  filename = "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
+  tree = read.nexus(filename)
+  species = names(vcv)
+  species = append(species, "Homo_sapiens")
+  tree = drop.tip(tree, setdiff(tree$tip.label, species))
+  species <- species[match(tree$tip.label, species)]
   
-  eig <- eigen(covar)
-  pmax <- eig$vectors[, 1]
-  pmax <- pmax / sqrt(sum(pmax^2))  # normaliza
-  e_pmax <- as.numeric(t(pmax) %*% covar %*% pmax)
+  #
+  results <- list()  # lista vazia
   
-  # 
-  rownames(covar) <- colnames(covar) <- NULL
-  correl <- cov2cor(covar)
+  for(i in seq_along(species)){
+    sp <- species[i]
+    cat("Rodando:", sp, "\n")   #
+    
+    medidas <- medias$ByTrait_Averages[[sp]]
+    
+    # 
+    if (is.null(medidas)) { 
+      cat("   Sem medidas para:", sp, "\n")
+      next 
+    }
   
-  #integ <- CalcEigenVar(as.matrix(correl))
-  integ <- unname(1 - evolvability::evolvabilityBeta(correl, dimor_norm)$a)
-  #integ <- unname(evolvability::evolvabilityBeta(correl, dimor_norm)$i)
+    # 
+    if(is.null(medidas)){
+      next
+    }
+    
+    # 
+    if(!(sp %in% names(vcv))){
+      next
+    }
+    
+    #
+    if(!(sp %in% names(error_samples))){
+      cat("   Sem error_samples para:", sp, "\n")
+      next
+    }
+    
+    # 
+    size_vec <- medidas$Machos - medidas$Fêmeas
+    size <- mean(size_vec)
   
+    #
+    dimor <- medidas$Machos - medidas$Fêmeas
+    
+    #
+    covar <- vcv[[sp]]
+    covar <- as.matrix(covar)
+    
+    # calcula médias dos traits
+    medias_por_trait <- (medidas$Machos + medidas$Fêmeas) / 2
+    medias_por_trait <- as.numeric(medias_por_trait)
+    mean_prod <- outer(medias_por_trait, medias_por_trait, "*") 
+    mat_scaled <- covar / mean_prod   # padroniza tudo
+    diag(mat_scaled) <- diag(covar) / (medias_por_trait ^ 2)   
+    covar <- mat_scaled
+    
+    if (is.null(covar)) { 
+      cat("   Sem covar no vcv para:", sp, "\n")
+      next 
+    }
+     
+    #
+    #eig <- eigen(covar)
+    #D <- diag(eig$values)
+    #V <- eig$vectors
+    #D2 <- D
+    #D2[1,1] <- min(eig$values[-1]) * 1e-8
+    #covar <- V %*% D2 %*% t(V)
+    
+    #
+    dimor_norm <- dimor / sqrt(sum(dimor ^ 2))
+    
+    # 
+    evolv <- as.numeric(t(dimor_norm) %*% covar %*% dimor_norm)
+    
+    
+    #size_norm <- size_vec / sqrt(sum(size_vec ^ 2))
+    #evolv <- as.numeric(t(size_norm) %*% covar %*% size_norm)
+    
+    eig <- eigen(covar)
+    pmax <- eig$vectors[, 1]
+    pmax <- pmax / sqrt(sum(pmax^2))  # normaliza
+    e_pmax <- as.numeric(t(pmax) %*% covar %*% pmax)
+    
+    # 
+    rownames(covar) <- colnames(covar) <- NULL
+    correl <- cov2cor(covar)
+    
+    #evolv <- unname(MeanMatrixStatistics(covar)[6])
+    evolv_var <- var(Evolvability(covar, size_skull = size)$respostas)
+    
+    
+    #integ <- CalcEigenVar(as.matrix(covar))
+    #integ <- unname(1 - MeanMatrixStatistics(as.matrix(correl))[8])
+    #integ_media <- unname(MeanMatrixStatistics(as.matrix(covar))[8])
+    integ <- unname(1 - evolvability::evolvabilityBeta(as.matrix(correl), dimor_norm)$a)
+    
+    mat_errors <- error_samples[[sp]]
+    
+    measure_cols <- c(
+      "ISPM","ISNSL","ISPNS","PMZS","PMZI","PMMT",
+      "NSLNA","NSLZS","NSLZI","NABR","NAFM","NAPNS",
+      "BRPT","BRAPET","PTFM","PTAPET","PTBA","PTEAM",
+      "PTZYGO","FMZS","FMMT","ZSZI","ZIMT",
+      "ZIZYGO","ZITSP","MTPNS","PNSAPET","APETBA",
+      "APETTS","BAEAM","EAMZYGO","ZYGOTSP","LDAS",
+      "BRLD","OPILD","PTAS","JPAS","BAOPI"
+    )
+    evolv_errors <- numeric(nrow(mat_errors))
+    
+    for(k in 1:nrow(mat_errors)){
+      P <- covar
+      B <- dimor_norm
+      
+      e <- as.numeric(mat_errors[k, measure_cols])
+      
+      B_err_raw <- B + e
+      
+      # 2. Re-unitiza o vetor com erro (FORÇA o comprimento a ser 1 novamente)
+      B_err <- B_err_raw / sqrt(sum(B_err_raw ^ 2))
+      
+      # 3. Calcula a evolvabilidade pura (sem precisar dividir por nada embaixo)
+      evolv_errors[k] <- as.numeric(t(B_err) %*% P %*% B_err)
+      
+    }
+    
+    p1 <- eig$vectors[,1]
+    p1 <- p1 / sqrt(sum(p1^2))
+    
+    a_pmax <- as.numeric(t(dimor_norm) %*% p1) * p1
+    
+    e_dimor_pmax <- as.numeric(t(a_pmax) %*% covar %*% a_pmax)
+    
+    
+    size_vec_norm <- size_vec/ sqrt(sum(size_vec^2))
+    
+    e_size <- as.numeric(t(size_vec_norm) %*% covar %*% size_vec_norm)
+    
+    #options(warn = -1)
+    results[[sp]] <- data.frame(
+      species = sp,
+      
+      Evolvability = evolv,
+      Mean_Evolvability = sum(diag(covar)) / ncol(covar),
+      Variance_Evolvability = evolv_var,
+      
+      Conditional_Evolvability = 1 / (t(dimor_norm) %*% solve(covar) %*% dimor_norm),
+      #Conditional_Evolvability = 1 / (t(size_norm) %*% solve(covar) %*% size_norm),
+      Mean_Conditional_Evolvability = (length(eigen(covar)$values) - 1) / sum(1 / eigen(covar)$values[-1]),
+      
+      Pmax = e_pmax,
+      Evolvability_error_mean = mean(evolv_errors),
+      Evolvability_error_sd = sd(evolv_errors),
+      
+      Evolvability_error_q025 = quantile(evolv_errors, 0.025),
+      Evolvability_error_q975 = quantile(evolv_errors, 0.975),
+      
+      Dimorfism = norma(dimor),
+      Size = size,
+      
+      Integration = integ,
+      Average_Integration = integ_media,
+      
+      Evolv_Dimor_Pmax = e_dimor_pmax,
+      Evolv_Size = e_size
+    )
+    #options(warn = 0)
+  } 
   
-  mat_errors <- error_samples[[sp]]
+  # junta tudo num único data.frame
+  error <- do.call(rbind, results)
+  rownames(error) <- NULL
   
-  measure_cols <- c(
-    "ISPM","ISNSL","ISPNS","PMZS","PMZI","PMMT",
-    "NSLNA","NSLZS","NSLZI","NABR","NAFM","NAPNS",
-    "BRPT","BRAPET","PTFM","PTAPET","PTBA","PTEAM",
-    "PTZYGO","FMZS","FMMT","ZSZI","ZIMT",
-    "ZIZYGO","ZITSP","MTPNS","PNSAPET","APETBA",
-    "APETTS","BAEAM","EAMZYGO","ZYGOTSP","LDAS",
-    "BRLD","OPILD","PTAS","JPAS","BAOPI"
+  #saveRDS(error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
+  #error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
+  
+  error_long <- error %>%
+    dplyr::select(
+      species,
+      Dimorfism,
+      Evolvability,
+      Evolvability_error_q025,
+      Evolvability_error_q975,
+      Mean_Evolvability,
+      Conditional_Evolvability,
+      Mean_Conditional_Evolvability,
+      Pmax,
+      Integration,
+      Average_Integration,
+      Evolv_Dimor_Pmax,
+      Evolv_Size,
+      Variance_Evolvability,
+      Size
+    ) %>%
+    rename(
+      Evolvability_value = Evolvability
   )
-  evolv_errors <- numeric(nrow(mat_errors))
   
-  for(k in 1:nrow(mat_errors)){
-    P <- covar
-    B <- dimor_norm
-    
-    e <- as.numeric(mat_errors[k, measure_cols])
-    
-    B_err_raw <- B + e
-    
-    # 2. Re-unitiza o vetor com erro (FORÇA o comprimento a ser 1 novamente)
-    B_err <- B_err_raw / sqrt(sum(B_err_raw ^ 2))
-    
-    # 3. Calcula a evolvabilidade pura (sem precisar dividir por nada embaixo)
-    evolv_errors[k] <- as.numeric(t(B_err) %*% P %*% B_err)
-    
-  }
+  #plot(error$Evolvability, error$Evolv_Dimor_Pmax)
+  #summary(lm(error$Evolvability ~ error$Evolv_Dimor_Pmax))
   
-  p1 <- eig$vectors[,1]
-  p1 <- p1 / sqrt(sum(p1^2))
-  
-  a_pmax <- as.numeric(t(dimor_norm) %*% p1) * p1
-  
-  e_dimor_pmax <- as.numeric(t(a_pmax) %*% covar %*% a_pmax)
-  
-  
-  size_vec_norm <- size_vec/ sqrt(sum(size_vec^2))
-  
-  e_size <- as.numeric(t(size_vec_norm) %*% covar %*% size_vec_norm)
-  
-  #options(warn = -1)
-  results[[sp]] <- data.frame(
-    species = sp,
-    
-    Evolvability = evolv,
-    Mean_Evolvability = sum(diag(covar)) / ncol(covar),
-    
-    Conditional_Evolvability = 1 / (t(dimor_norm) %*% solve(covar) %*% dimor_norm),
-    #Conditional_Evolvability = 1 / (t(size_norm) %*% solve(covar) %*% size_norm),
-    Mean_Conditional_Evolvability = (length(eigen(covar)$values) - 1) / sum(1 / eigen(covar)$values[-1]),
-    
-    Pmax = e_pmax,
-    Evolvability_error_mean = mean(evolv_errors),
-    Evolvability_error_sd = sd(evolv_errors),
-    
-    Evolvability_error_q025 = quantile(evolv_errors, 0.025),
-    Evolvability_error_q975 = quantile(evolv_errors, 0.975),
-    
-    Dimorfism = norma(dimor),
-    Size = size,
-    
-    Integration = integ,
-    
-    Evolv_Dimor_Pmax = e_dimor_pmax,
-    Evolv_Size = e_size
-  )
-  #options(warn = 0)
-} 
-
-# junta tudo num único data.frame
-error <- do.call(rbind, results)
-rownames(error) <- NULL
-
-#saveRDS(error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
-#error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Error_M_Matrix.RDS")
-
-error_long <- error %>%
-  dplyr::select(
-    species,
-    Dimorfism,
-    Evolvability,
-    Evolvability_error_q025,
-    Evolvability_error_q975,
-    Mean_Evolvability,
-    Conditional_Evolvability,
-    Mean_Conditional_Evolvability,
-    Pmax,
-    Integration,
-    Evolv_Dimor_Pmax,
-    Evolv_Size,
-    Size
-  ) %>%
-  rename(
-    Evolvability_value = Evolvability
-)
-
-#plot(error$Evolvability, error$Evolv_Dimor_Pmax)
-#summary(lm(error$Evolvability ~ error$Evolv_Dimor_Pmax))
-
-p1 <- ggplot(
-  error_long,
-  aes(
-    x = Dimorfism,
-    y = Evolvability_value
-  )
-) +
-  
-  # error bars
-  #geom_errorbar(
-  #  aes(
-  #   ymin = Evolvability_error_q025,
-  #    ymax = Evolvability_error_q975
-  # ),
-  #  width = 0,
-  #  alpha = 0.5
-  #) +
-  
-  # pontos
-  geom_quasirandom(
-    width = 0.02,
-    size = 6,
-    alpha = 0.8
-  ) +
-  
-  # regressão
-  geom_smooth(
-    method = "lm",
-    se = TRUE
-  ) +
-  
-  # R²
-  stat_poly_eq(
-    aes(label = paste(..rr.label..)),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x = "right",
-    label.y = "top",
-    size = 10
-  ) +
-  
-  theme_classic(base_size = 14) +
-  
-  theme(
-    plot.title = element_text(size = 28, face = "bold", hjust = 0.5, margin = margin(b = 20)),
-    axis.title = element_text(size = 28, face = "bold"),
-    axis.text = element_text(size = 24, face = "bold"),
-    legend.title = element_text(size = 24, face = "bold"),
-    legend.text = element_text(size = 24, face = "bold")
-  ) +
-  
-  labs(
-    title = "Positive Relation Between Sexual Dimorphism and Evolvability",
-    x = "Sexual Dimorphism",
-    y = "Evolvability"
-  )
-
-p1
-
-# Salva o gráfico em alta resolução
-ggsave(
-  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Dimorphism_Error_NonError.png",
-  plot = p1,
-  width = 16,
-  height = 7,
-  dpi = 300
-)
-
-p2 <- ggplot(
+  p1 <- ggplot(
     error_long,
     aes(
       x = Integration,
@@ -297,30 +284,35 @@ p2 <- ggplot(
     )
   ) +
     
-    geom_errorbar(
-      aes(
-        ymin = Evolvability_error_q025,
-        ymax = Evolvability_error_q975
-      ),
-      width = 0,
-      alpha = 0.5
-    ) +
+    # error bars
+    #geom_errorbar(
+    #  aes(
+    #   ymin = Evolvability_error_q025,
+    #    ymax = Evolvability_error_q975
+    # ),
+    #  width = 0,
+    #  alpha = 0.5
+    #) +
     
-    geom_point(
+    # pontos
+    geom_quasirandom(
+      width = 0.02,
       size = 6,
       alpha = 0.8
     ) +
     
+    # regressão
     geom_smooth(
       method = "lm",
       se = TRUE
     ) +
     
+    # R²
     stat_poly_eq(
       aes(label = paste(..rr.label..)),
       formula = y ~ x,
       parse = TRUE,
-      label.x = "left",
+      label.x = "right",
       label.y = "top",
       size = 10
     ) +
@@ -330,22 +322,91 @@ p2 <- ggplot(
     theme(
       plot.title = element_text(size = 28, face = "bold", hjust = 0.5, margin = margin(b = 20)),
       axis.title = element_text(size = 28, face = "bold"),
-      axis.text = element_text(
-        size = 24,
-        face = "bold",
-        colour = "black"
-      ),
+      axis.text = element_text(size = 24, face = "bold"),
       legend.title = element_text(size = 24, face = "bold"),
       legend.text = element_text(size = 24, face = "bold")
     ) +
     
     labs(
-      title = "No Relation between Constraint and Evolvability",
-      x = "Constraint Index",
+      title = "Positive Relation Between Sexual Dimorphism and Evolvability",
+      x = "Sexual Dimorphism",
       y = "Evolvability"
-  )
+    )
   
+  p1
+  
+  # Salva o gráfico em alta resolução
+  #ggsave(
+  #  "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Dimorphism_Error_NonError.png",
+  #  plot = p1,
+  #  width = 16,
+  #  height = 7,
+  #  dpi = 300
+  #)
+
+error_long$Average_Integration <-  1 - error_long$Average_Integration
+  
+p2 <- ggplot(
+      error_long,
+      aes(
+        x = Integration,
+        y = Evolvability_value
+      )
+    ) +
+      
+      geom_errorbar(
+        aes(
+          ymin = Evolvability_error_q025,
+          ymax = Evolvability_error_q975
+        ),
+        width = 0,
+        alpha = 0.5
+      ) +
+      
+      geom_point(
+        size = 6,
+        alpha = 0.8
+      ) +
+      
+      geom_smooth(
+        method = "lm",
+        se = TRUE
+      ) +
+      
+      stat_poly_eq(
+        aes(label = paste(..rr.label..)),
+        formula = y ~ x,
+        parse = TRUE,
+        label.x = "left",
+        label.y = "top",
+        size = 10
+      ) +
+      
+      #coord_cartesian(ylim = c(0.95, 1.05)) +
+  
+      theme_classic(base_size = 14) +
+      
+      theme(
+        plot.title = element_text(size = 28, face = "bold", hjust = 0.5, margin = margin(b = 20)),
+        axis.title = element_text(size = 28, face = "bold"),
+        axis.text = element_text(
+          size = 24,
+          face = "bold",
+          colour = "black"
+        ),
+        legend.title = element_text(size = 24, face = "bold"),
+        legend.text = element_text(size = 24, face = "bold")
+      ) +
+      
+      labs(
+        #title = "No Relation between Constraint and Evolvability",
+        x = "Global Integration",
+        y = "Average Evolvability"
+    )
+    
 p2
+
+plot(error_long$Integration, error_long$Evolvability_value)
 
 ggsave(
   "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Integration_Pmax_Error_NonError.png",

@@ -44,9 +44,21 @@ for(i in 1:length(sigmas)){
     # choose species and vcv
     sp <- sp_comuns[j]
     
+    medias <- medidas$ByTrait_Averages[[sp]]
+    
+    
     # vcv
     covar <- vcv[[sp]]
     covar <- as.matrix(covar)
+    
+    # calcula médias dos traits
+    medias_por_trait <- (medias$Machos + medias$Fêmeas) / 2
+    medias_por_trait <- as.numeric(medias_por_trait)
+    mean_prod <- outer(medias_por_trait, medias_por_trait, "*") 
+    mat_scaled <- covar / mean_prod   # padroniza tudo
+    diag(mat_scaled) <- diag(covar) / (medias_por_trait ^ 2)   
+    covar <- mat_scaled
+    
     
     # zero first eingenvector?
     #eig <- eigen(covar)
@@ -108,7 +120,7 @@ colnames(evolvas_error) <- c("Species", "Sexual_Dimorphism", "Evolvability", "Er
                              "Sigma_Value")
 
 #saveRDS(evolvas_error, file = "~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
-evolvas_error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
+#evolvas_error <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/Evolvability_Errors.RDS")
 
 # plot
 p1 <- ggplot(evolvas_error, aes(x = Sexual_Dimorphism, y = Error_Evolvability)) +
