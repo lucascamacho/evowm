@@ -27,7 +27,7 @@ p1 <- ggplot(data, aes(x = atanh(align_1), y = normas, color = matings.dados.PAR
   geom_smooth(method = "lm", se = TRUE, linewidth = 1.4,
               linetype = "dashed", alpha = 0.2) +
   geom_point(size = 2.5, alpha = 0.9, stroke = 2) +
-  geom_hline(yintercept = 1, linetype = "dashed", alpha = 0.6, col = "red") +
+  geom_hline(yintercept = 0, linetype = "dashed", alpha = 0.6, col = "red") +
   stat_poly_eq(
     aes(label = paste(..rr.label..), color = matings.dados.PARVORDER),
     formula = y ~ x,
@@ -43,7 +43,7 @@ p1 <- ggplot(data, aes(x = atanh(align_1), y = normas, color = matings.dados.PAR
   theme_classic(base_size = 14) +
   theme_bw(base_size = 14) +
   labs(
-    x = "Pmax-Sexual Dimorphism Alignments",
+    x = "PC1-Sexual Dimorphism Alignments",
     y = "Sexual Dimorphism",
     color = "Parvorder",
     fill  = "Parvorder"
@@ -63,7 +63,7 @@ p1
 
 #summary(lm(normas ~ atanh(align_1), data))
 
-ggsave("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/F_M_cor_PCS_Dimorphism_Extant.png", plot = p1,
+ggsave("~/Dropbox/Doc/Code/evowm/R/Scripts/matings/cor_PCS_Dimorphism_Extant.png", plot = p1,
        width = 12,    # largura em inches
        height = 8,   # altura em inches
        dpi = 200)    # resolução

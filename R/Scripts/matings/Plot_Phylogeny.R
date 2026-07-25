@@ -127,9 +127,9 @@ p_final <- p +
   # nomes dos gêneros
   geom_tiplab(size = 4, offset = 2.5, align = TRUE) +
   
-  geom_point(aes(x = x + 1, size = normas),
-             color = "red",
-             na.rm = TRUE) +
+  #geom_point(aes(x = x + 1, size = normas),
+  #           color = "red",
+  #           na.rm = TRUE) +
   
   scale_color_manual(values = mycols) +
   
