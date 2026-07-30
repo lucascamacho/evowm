@@ -26,6 +26,7 @@ species <- names(vcv)
 results_g <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Distances.RDS")
 results_d <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Divergence.RDS")
 results_e <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Evolvability_Averages.RDS")
+results_sd <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Evolvability_Sexual_Dimorphism.RDS")
 R <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/R_matrix.RDS")
 medias <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
 
@@ -458,4 +459,7 @@ p8 <- ggplot(data_cond_evolvability,
   )
 
 p8
+
+######## FIGURE EVOLVABILITY SD
+
 
