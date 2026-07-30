@@ -1,16 +1,21 @@
-# Tsuboi 2025 code
-# This is a basic code to test my data on Tsuboi et al 2025
-#
-# get the species P matrices
+# Calculate divergence between Ps
 setwd("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/")
 
-# load packages
-library(evolvability)
-library(evolqg)
 library(ape)
-library(dplyr)
-library(slouch)
-library(phytools)
+library(evolqg)
+
+# function to calculate diff
+responseDiff <- function(P1, P2, beta){
+  
+  D <- P1 - P2
+  
+  sqrt(as.numeric(t(beta) %*% D %*% D %*% beta))
+}
+
+# scale trace of P matrix
+scale.trace <- function(P, target.trace){
+  P * target.trace / sum(diag(P))
+}
 
 # read all species VCV matrices
 setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
@@ -38,35 +43,17 @@ eig <- eigen(anc_vcv)
 D <- diag(eig$values)
 V <- eig$vectors
 D2 <- D
-D2[1,1] <- min(eig$values[-1]) * 1e-8
+D2[1,1] <- max(eig$values) * 1e-8
 anc_vcv <- V %*% D2 %*% t(V)
 
-# get pcs
-pcs <- eigen(anc_vcv)$vectors
-
-
-
 # calculating the divergence between species
-Pavg <- Reduce("+", vcv) / length(vcv)
-
-# scale trace of P matrix
-scale.trace <- function(P, target.trace){
-  P * target.trace / sum(diag(P))
-}
+Pavg <- anc_vcv
 
 # generate 1000 vectors
 ntraits <- nrow(Pavg)
 nrep <- 1000
 beta <- matrix(rnorm(ntraits * nrep), ntraits, nrep)
 beta <- apply(beta, 2, function(x) x / sqrt(sum(x^2)))
-
-# function to calculate diff
-responseDiff <- function(P1, P2, beta){
-  
-  D <- P1 - P2
-  
-  sqrt(as.numeric(t(beta) %*% D %*% D %*% beta))
-}
 
 target.trace <- sum(diag(as.matrix(Pavg)))
 
@@ -90,14 +77,13 @@ for(sp in names(vcv)){
                     P2 = Pavg)
   
   results_d <- rbind(results_d,
-                   data.frame(
-                     Species = sp,
-                     Mean_d_raw = mean(d.raw),
-                     SD_d_raw = sd(d.raw),
-                     Mean_d_scaled = mean(d.scaled),
-                     SD_d_scaled = sd(d.scaled)
-                   ))
+                     data.frame(
+                       Species = sp,
+                       Mean_d_raw = mean(d.raw),
+                       SD_d_raw = sd(d.raw),
+                       Mean_d_scaled = mean(d.scaled),
+                       SD_d_scaled = sd(d.scaled)
+                     ))
 }
 
-
-
+saveRDS(results_d, "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Divergence.RDS")
