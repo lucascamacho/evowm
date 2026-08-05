@@ -44,12 +44,14 @@ results_e <- results_e %>%
 sp_comuns <- Reduce(intersect, list(
   results_d$Species,
   results_e$Species,
-  results_g$Species
+  results_g$Species,
+  results_sd$Species
 ))
 
 results_d <- results_d[results_d$Species %in% sp_comuns, ]
 results_e <- results_e[results_e$Species %in% sp_comuns, ]
 results_g <- results_g[results_g$Species %in% sp_comuns, ]
+results_sd <- results_sd[results_sd$Species %in% sp_comuns, ]
 
 ######################### FIGURES #############################################
 ###### FIGURE 2
@@ -461,5 +463,10 @@ p8 <- ggplot(data_cond_evolvability,
 p8
 
 ######## FIGURE EVOLVABILITY SD
+plot(log(results_sd$Evolvability_SD), results_g$GeodesicDistance)
+plot(log(results_sd$Conditional_Evolvability_SD), results_g$GeodesicDistance)
+
+plot(log(results_sd$Evolvability_SD), results_g$EuclideanDistance)
+plot(log(results_sd$Conditional_Evolvability_SD), results_g$EuclideanDistance)
 
 
