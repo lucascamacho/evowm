@@ -5,6 +5,7 @@ library(slouch)
 library(ggplot2)
 library(dplyr)
 library(ape)
+library(gridExtra)
 
 # read all species VCV matrices
 setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
@@ -83,7 +84,7 @@ label <- sprintf("Slope = %.2f \u00B1 %.2f\nR² = %.3f",
 
 p2 <- ggplot(results_g, aes(x = EuclideanDistance,
                             y = GeodesicDistance)) +
-  geom_point(size = 2.5, alpha = 0.7, color = "steelblue4") +
+  geom_point(size = 3) +
   geom_abline(intercept = intercept,
               slope = slope,
               color = "firebrick",
@@ -100,6 +101,14 @@ p2 <- ggplot(results_g, aes(x = EuclideanDistance,
   theme_classic(base_size = 14)
 
 p2
+
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Figure2.png",
+  plot = p2,
+  width = 12,
+  height = 7,
+  dpi = 300
+)
 
 ######## FIGURE 3
 # 3.1
@@ -122,7 +131,9 @@ plot_data <- data.frame(
 
 p3 <- ggplot(plot_data, aes(
   x = log10(P),
-  y = log10(R)
+  y = log10(R),
+  group = species,
+  color = species
 )) +
   
   geom_point(
@@ -131,10 +142,14 @@ p3 <- ggplot(plot_data, aes(
   
   geom_smooth(
     method = "lm",
-    se = FALSE
+    se = FALSE,
+    alpha = 0.1
   ) +
   
   theme_classic() +
+  theme(
+    legend.position = "none"
+  ) +
   
   labs(
     x = expression(log[10](lambda[P])),
@@ -242,10 +257,10 @@ intercept <- 1.103648
 r2 <- 0.347
 
 p5 <- ggplot(data_integration,
-       aes(
-         x = GeodesicDistance,
-         y = RP_slope
-       )) +
+             aes(
+               x = GeodesicDistance,
+               y = RP_R2
+             )) +
   
   geom_point(size = 3) +
   
@@ -266,11 +281,11 @@ p5 <- ggplot(data_integration,
     size = 5
   ) +
   
-  theme_classic() +
+  theme_classic(base_size = 14) +
   
   labs(
     x = "Geodesic distance",
-    y = "R-P scaling slope"
+    y = expression(R^2~"of log"[10]*"(R) ~ vs ~ log"[10]*"(P)")
   )
 
 p5
@@ -303,9 +318,7 @@ p6 <- ggplot(data_integration,
                y = RP_slope
              )) +
   
-  geom_point(size = 3,
-             alpha = 0.8,
-             color = "steelblue4") +
+  geom_point(size = 3) +
   
   geom_abline(
     intercept = intercept,
@@ -328,10 +341,21 @@ p6 <- ggplot(data_integration,
   
   labs(
     x = "Geodesic distance",
-    y = expression(R^2~"(R-P relationship)")
+    y = expression("Slope of log"[10]*"(R) ~ vs ~ log"[10]*"(P)")
   )
 
 p6
+
+# fit all figures together p3 ate p6
+p_final <- grid.arrange(p3, p4, p5, p6)
+
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Figure3.png",
+  plot = p_final,
+  width = 12,
+  height = 7,
+  dpi = 300
+)
 
 ######## FIGURE 5
 # 5.1
@@ -368,9 +392,7 @@ p7 <- ggplot(data_evolvability,
                y = GeodesicDistance
              )) +
   
-  geom_point(size = 3,
-             alpha = 0.8,
-             color = "steelblue4") +
+  geom_point(size = 3) +
   
   geom_abline(
     intercept = intercept,
@@ -432,9 +454,7 @@ p8 <- ggplot(data_cond_evolvability,
                y = GeodesicDistance
              )) +
   
-  geom_point(size = 3,
-             alpha = 0.8,
-             color = "steelblue4") +
+  geom_point(size = 3) +
   
   geom_abline(
     intercept = intercept,
@@ -462,11 +482,160 @@ p8 <- ggplot(data_cond_evolvability,
 
 p8
 
+# merge p6 and p7 together
+p_final2 <- grid.arrange(p7, p8)
+
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Figure5.png",
+  plot = p_final2,
+  width = 12,
+  height = 7,
+  dpi = 300
+)
+
+
 ######## FIGURE EVOLVABILITY SD
-plot(log(results_sd$Evolvability_SD), results_g$GeodesicDistance)
-plot(log(results_sd$Conditional_Evolvability_SD), results_g$GeodesicDistance)
+# X.1 Evolvability SD
+df_ou <- data.frame(
+  species = factor(results_sd$Species, levels = tree$tip.label),
+  evolvability_sd = log(results_sd$Evolvability_SD),
+  geodist = results_g$GeodesicDistance
+)
 
-plot(log(results_sd$Evolvability_SD), results_g$EuclideanDistance)
-plot(log(results_sd$Conditional_Evolvability_SD), results_g$EuclideanDistance)
+df_ou <- df_ou[match(tree$tip.label, df_ou$species), ]
+
+alpha_vals <- seq(0.2, 0.9, length.out = 20)
+fit_ou_esd_geodist <- slouch.fit(
+  phy = tree,
+  response = df_ou$geodist,
+  species = df_ou$species,
+  direct.cov = df_ou$evolvability_sd,
+  a_values = alpha_vals
+)
+
+summary(fit_ou_esd_geodist)
+
+# Fill these after running SLOUCH
+slope <- -0.4094236
+intercept <- 19.86204
+r2 <- 0.0438
+  
+data_evolvability_sd <- data.frame(
+    log_Evolvability_SD = log(results_sd$Evolvability_SD),
+    GeodesicDistance = results_g$GeodesicDistance
+)
+
+p_sd1 <- ggplot(
+  data_evolvability_sd,
+  aes(
+    x = log_Evolvability_SD,
+    y = GeodesicDistance
+  )
+) +
+  
+  geom_point(size = 3) +
+  
+  geom_abline(
+    intercept = intercept,
+    slope = slope,
+    color = "firebrick",
+    linewidth = 1.2
+  ) +
+  
+  annotate(
+    "text",
+    x = Inf,
+    y = Inf,
+    label = sprintf("R² = %.3f", r2),
+    hjust = 1.1,
+    vjust = 1.5,
+    size = 5
+  ) +
+  
+  theme_classic(base_size = 14) +
+  
+  labs(
+    x = expression(log("Evolvability SD")),
+    y = "Geodesic distance"
+  )
+
+p_sd1
 
 
+# X.2 Conditional Evolvability SD
+df_ou <- data.frame(
+  species = factor(results_sd$Species, levels = tree$tip.label),
+  conditional_evolvability_sd = log(results_sd$Conditional_Evolvability_SD),
+  geodist = results_g$GeodesicDistance
+)
+
+df_ou <- df_ou[match(tree$tip.label, df_ou$species), ]
+
+alpha_vals <- seq(0.5, 1, length.out = 20)
+fit_ou_cesd_geodist <- slouch.fit(
+  phy = tree,
+  response = df_ou$geodist,
+  species = df_ou$species,
+  direct.cov = df_ou$conditional_evolvability_sd,
+  a_values = alpha_vals
+)
+
+summary(fit_ou_cesd_geodist)
+
+# Fill these after running SLOUCH
+slope <- 0.4284262
+intercept <- 30.96478
+r2 <- 0.277
+  
+data_cond_evolvability_sd <- data.frame(
+    log_Conditional_Evolvability_SD = log(results_sd$Conditional_Evolvability_SD),
+    GeodesicDistance = results_g$GeodesicDistance
+)
+
+p_sd2 <- ggplot(
+  data_cond_evolvability_sd,
+  aes(
+    x = log_Conditional_Evolvability_SD,
+    y = GeodesicDistance
+  )
+) +
+  
+  geom_point(size = 3) +
+  
+  geom_abline(
+    intercept = intercept,
+    slope = slope,
+    color = "firebrick",
+    linewidth = 1.2
+  ) +
+  
+  annotate(
+    "text",
+    x = Inf,
+    y = Inf,
+    label = sprintf("R² = %.3f", r2),
+    hjust = 1.1,
+    vjust = 1.5,
+    size = 5
+  ) +
+  
+  theme_classic(base_size = 14) +
+  
+  labs(
+    x = expression(log("Conditional evolvability SD")),
+    y = "Geodesic distance"
+  )
+
+p_sd2
+
+
+# Merge plots
+p_final_sd <- grid.arrange(p_sd1, p_sd2)
+
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Figure_SD.png",
+  plot = p_final_sd,
+  width = 12,
+  height = 7,
+  dpi = 300
+)
