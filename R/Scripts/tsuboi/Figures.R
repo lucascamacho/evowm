@@ -30,6 +30,7 @@ results_e <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Evolvability_Ave
 results_sd <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Evolvability_Sexual_Dimorphism.RDS")
 R <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/R_matrix.RDS")
 medias <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
+eigen_df <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/PropVar_Rank.RDS")
 
 # get species evolvability means
 results_e <- results_e %>%
@@ -637,5 +638,54 @@ ggsave(
   plot = p_final_sd,
   width = 12,
   height = 7,
+  dpi = 300
+)
+
+# Figure ranks and proportion of variation
+p9 <- ggplot(eigen_df, aes(x = Rank, y = log(Prop_variance), group = Species)) +
+        geom_line(alpha = 0.4) +
+        geom_point(alpha = 0.4, size = 1) +
+        labs(
+        x = "Eigenvector rank",
+        y = "Log of the proportion of variance explained"
+        ) +
+     theme_classic() +
+  theme(
+    panel.border = element_rect(color = "black", fill = NA),
+    legend.position = "none",
+    panel.grid = element_blank(),
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 16),
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 14)
+  )
+
+p10 <- ggplot(eigen_df, aes(x = Rank, y = Prop_variance, group = Species)) +
+         geom_line(alpha = 0.4) +
+         geom_point(alpha = 0.4, size = 1) +
+       labs(
+         x = "Eigenvector rank",
+         y = "Raw proportion of variance explained"
+       ) +
+  theme_classic() +
+  theme(
+    panel.border = element_rect(color = "black", fill = NA),
+    legend.position = "none",
+    panel.grid = element_blank(),
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 16),
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 14)
+  )
+
+p_final_propvar <- grid.arrange(p9, p10)
+
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Prop_Var_Exp_Rank.png",
+  plot = p_final_propvar,
+  width = 12,
+  height = 10,
   dpi = 300
 )
