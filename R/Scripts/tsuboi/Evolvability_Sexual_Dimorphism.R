@@ -7,23 +7,27 @@ library(ape)
 library(evolqg)
 
 # read all species VCV matrices
-setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
-temp = list.files(pattern = "*.csv")
-vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
-names(vcv)  = gsub(".csv", replacement= "", temp)
+#setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
+#temp = list.files(pattern = "*.csv")
+#vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
+#names(vcv)  = gsub(".csv", replacement= "", temp)
+load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/vcv.RData")
 
 # read phylogeny
-filename <- "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
-tree <- read.nexus(filename)
+#filename <- "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
+#tree <- read.nexus(filename)
+load("~/Desktop/Primatrees.RData")
 species <- names(vcv)
 tree <- drop.tip(tree, setdiff(tree$tip.label, species))
 
 # remove vcv which are not in the phylogeny
-vcv <- vcv[!names(vcv) %in% setdiff(names(vcv), tree$tip.label)]
-species <- names(vcv)
+#vcv <- vcv[!names(vcv) %in% setdiff(names(vcv), tree$tip.label)]
+#species <- names(vcv)
 
 # read species avergaes
-medias <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
+#medias <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
+load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Genus_Means.RData")
+load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/SD.RData")
 
 # get ancestral VCV eigenvectors
 all_cov_matrices <- PhyloW(tree, vcv)
@@ -56,7 +60,13 @@ results_sd <- data.frame(
 for(i in seq_along(species)){
   
   covar <- as.matrix(vcv[[species[i]]])
-  medias_sp <- medias$ByTrait_Averages[[species[i]]]
+  #medias_sp <- medias$ByTrait_Averages[[species[i]]]
+  sd <- as.numeric(
+    sexual_dimorphism_df[
+      sexual_dimorphism_df$Genus == species[i],
+      -(1:3)
+    ]
+  )
   
   # remove first eingenvalue or put almost zero on it
   eig <- eigen(covar)
@@ -70,7 +80,7 @@ for(i in seq_along(species)){
   e_mean <- evolvabilityMeans(covar)[1]
   c_mean<- evolvabilityMeans(covar)[4]
   
-  sd <- medias_sp$Machos - medias_sp$Fêmeas
+ # sd <- medias_sp$Machos - medias_sp$Fêmeas
   
   evo <- evolvabilityBeta(covar, sd)
   

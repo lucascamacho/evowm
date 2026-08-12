@@ -8,20 +8,22 @@ library(ape)
 library(gridExtra)
 
 # read all species VCV matrices
-setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
-temp = list.files(pattern = "*.csv")
-vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
-names(vcv)  = gsub(".csv", replacement= "", temp)
+#setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
+#temp = list.files(pattern = "*.csv")
+#vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
+#names(vcv)  = gsub(".csv", replacement= "", temp)
+load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/vcv.RData")
 
 # read phylogeny
-filename <- "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
-tree <- read.nexus(filename)
+#filename <- "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
+#tree <- read.nexus(filename)
+load("~/Desktop/Primatrees.RData")
 species <- names(vcv)
 tree <- drop.tip(tree, setdiff(tree$tip.label, species))
 
 # remove vcv which are not in the phylogeny
-vcv <- vcv[!names(vcv) %in% setdiff(names(vcv), tree$tip.label)]
-species <- names(vcv)
+#vcv <- vcv[!names(vcv) %in% setdiff(names(vcv), tree$tip.label)]
+#species <- names(vcv)
 
 # load data
 results_g <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Distances.RDS")
@@ -29,7 +31,9 @@ results_d <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Divergence.RDS")
 results_e <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Evolvability_Averages.RDS")
 results_sd <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Evolvability_Sexual_Dimorphism.RDS")
 R <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/R_matrix.RDS")
-medias <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
+#medias <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/evolvability/averages_PCS_autovalues_primates.RDS")
+medias <- load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Genus_Means.RData")
+sd <- load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/SD.RData")
 eigen_df <- readRDS("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/PropVar_Rank.RDS")
 
 # get species evolvability means
@@ -65,7 +69,7 @@ df_ou <- data.frame(
 
 df_ou <- df_ou[match(tree$tip.label, df_ou$species), ]
 
-alpha_vals <- seq(0.1, 0.5, length.out = 20)
+alpha_vals <- seq(0.1, 0.9, length.out = 20)
 fit_ou_eu_geo <- slouch.fit(
   phy = tree,
   response = df_ou$geodist,
@@ -75,10 +79,10 @@ fit_ou_eu_geo <- slouch.fit(
 )
 summary(fit_ou_eu_geo)
 
-intercept <- 19.78099
-slope <- 100.6858
-slope_se <- 26.81016
-r2 <- 0.162
+intercept <- 20.88379
+slope <- 64.48172
+slope_se <- 16.32057
+r2 <- 0.281
 
 label <- sprintf("Slope = %.2f \u00B1 %.2f\nR² = %.3f",
                  slope, slope_se, r2)
@@ -113,29 +117,46 @@ ggsave(
 
 ######## FIGURE 3
 # 3.1
-eig_R <- eigen(R, symmetric = TRUE)
-lambda_R <- eig_R$values
+# Eigenvalues of R
+lambda_R <- eigen(
+  R,
+  symmetric = TRUE
+)$values
 
-lambda_P <- t(sapply(medias$Autovalues, function(x){
-  unlist(x)
+
+# Eigenvalues of P for each genus
+lambda_P <- t(sapply(names(vcv), function(sp) {
+  
+  eigen(
+    vcv[[sp]],
+    symmetric = TRUE
+  )$values
+  
 }))
 
-lambda_R <- eigen(R, symmetric = TRUE)$values[1:6]
+# Row names = genus names
+rownames(lambda_P) <- names(vcv)
 
+
+# Prepare plotting data
 plot_data <- data.frame(
   P = as.vector(t(lambda_P)),
   R = rep(lambda_R, times = nrow(lambda_P)),
-  species = rep(rownames(lambda_P), each = 6),
-  eigenvector = rep(1:6, times = nrow(lambda_P))
+  species = rep(rownames(lambda_P), each = 39),
+  eigenvector = rep(1:39, times = nrow(lambda_P))
 )
 
 
-p3 <- ggplot(plot_data, aes(
-  x = log10(P),
-  y = log10(R),
-  group = species,
-  color = species
-)) +
+# Plot
+p3 <- ggplot(
+  plot_data,
+  aes(
+    x = log10(P),
+    y = log10(R),
+    group = species,
+    color = species
+  )
+) +
   
   geom_point(
     alpha = 0.5
@@ -148,6 +169,7 @@ p3 <- ggplot(plot_data, aes(
   ) +
   
   theme_classic() +
+  
   theme(
     legend.position = "none"
   ) +
@@ -358,6 +380,175 @@ ggsave(
   dpi = 300
 )
 
+######## FIGURE 4
+vcv <- lapply(vcv, as.matrix)
+
+P_mean <- Reduce(
+  "+",
+  vcv
+) / length(vcv)
+
+eig_P_mean <- eigen(
+  P_mean,
+  symmetric = TRUE
+)
+
+# Common eigenvectors
+G <- eig_P_mean$vectors
+
+# Eigenvalues of mean P
+lambda_P_mean <- eig_P_mean$values
+
+e_values <- sapply(
+  names(vcv),
+  function(sp) {
+    
+    P <- vcv[[sp]]
+    
+    diag(
+      t(G) %*%
+        P %*%
+        G
+    )
+    
+  }
+)
+
+c_values <- sapply(
+  names(vcv),
+  function(sp) {
+    
+    P <- vcv[[sp]]
+    
+    P_inv <- solve(P)
+    
+    1 / diag(
+      t(G) %*%
+        P_inv %*%
+        G
+    )
+    
+  }
+)
+
+e_values <- t(e_values)
+c_values <- t(c_values)
+
+rownames(e_values) <- names(vcv)
+rownames(c_values) <- names(vcv)
+
+colnames(e_values) <- paste0("PC", 1:39)
+colnames(c_values) <- paste0("PC", 1:39)
+
+
+# Check dimensions
+dim(e_values)
+dim(c_values)
+
+
+cor_e <- cor(
+  e_values,
+  method = "pearson"
+)
+
+cor_c <- cor(
+  c_values,
+  method = "pearson"
+)
+
+plot_matrix <- matrix(
+  NA,
+  nrow = 39,
+  ncol = 39
+)
+
+# Add names BEFORE converting to table
+rownames(plot_matrix) <- paste0("PC", 1:39)
+colnames(plot_matrix) <- paste0("PC", 1:39)
+
+
+# Lower triangle = unconditional variance (e)
+plot_matrix[lower.tri(plot_matrix)] <-
+  cor_e[lower.tri(cor_e)]
+
+# Upper triangle = conditional variance (c)
+plot_matrix[upper.tri(plot_matrix)] <-
+  cor_c[upper.tri(cor_c)]
+
+# Diagonal = 1
+diag(plot_matrix) <- 1
+
+heatmap_data <- as.data.frame(
+  as.table(plot_matrix)
+)
+
+colnames(heatmap_data) <- c(
+  "Y",
+  "X",
+  "Correlation"
+)
+
+heatmap_data$Y <- factor(
+  heatmap_data$Y,
+  levels = paste0("PC", 39:1)
+)
+
+heatmap_data$X <- factor(
+  heatmap_data$X,
+  levels = paste0("PC", 1:39)
+)
+
+p_4 <- ggplot(
+  heatmap_data,
+  aes(
+    x = X,
+    y = Y,
+    fill = Correlation
+  )
+) +
+  
+  geom_tile() +
+  
+  scale_fill_gradient2(
+    low = "blue",
+    mid = "white",
+    high = "red",
+    midpoint = 0,
+    limits = c(-1, 1),
+    na.value = "white"
+  ) +
+  
+  coord_equal() +
+  
+  theme_classic(
+    base_size = 14
+  ) +
+  
+  theme(
+    axis.text.x = element_text(
+      angle = 90,
+      hjust = 1,
+      vjust = 0.5
+    )
+  ) +
+  
+  labs(
+    x = "Eigenvectors of mean P",
+    y = "Eigenvectors of mean P",
+    fill = "Correlation"
+  )
+
+
+p_4
+
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Figure4.png",
+  plot = p_4,
+  width = 12,
+  height = 12,
+  dpi = 300
+)
+
 ######## FIGURE 5
 # 5.1
 df_ou <- data.frame(
@@ -378,9 +569,9 @@ fit_ou_e_geodist <- slouch.fit(
 )
 summary(fit_ou_e_geodist)
 
-slope <- -2.413214
-intercept <- 9.890194
-r2 <- 0.0541
+slope <- -0.2164738
+intercept <- 23.52066
+r2 <- 6.72e-04
 
 data_evolvability <- data.frame(
   log_Evolvability = log(results_e$Mean_Evolvability),
@@ -440,9 +631,9 @@ fit_ou_c_geodist <- slouch.fit(
 )
 summary(fit_ou_c_geodist)
 
-slope <- -1.348708
-intercept <- 7.514148
-r2 <- 0.604
+intercept <- 21.93461
+slope <- -0.2579201
+r2 <- 0.0262
 
 data_cond_evolvability <- data.frame(
   log_Conditional_Evolvability = log(results_e$Mean_Conditional_Evolvability),
@@ -517,9 +708,9 @@ fit_ou_esd_geodist <- slouch.fit(
 summary(fit_ou_esd_geodist)
 
 # Fill these after running SLOUCH
-slope <- -0.4094236
-intercept <- 19.86204
-r2 <- 0.0438
+intercept <- 22.57885
+slope <- -0.3008721
+r2 <- 0.175
   
 data_evolvability_sd <- data.frame(
     log_Evolvability_SD = log(results_sd$Evolvability_SD),
@@ -584,9 +775,9 @@ fit_ou_cesd_geodist <- slouch.fit(
 summary(fit_ou_cesd_geodist)
 
 # Fill these after running SLOUCH
-slope <- 0.4284262
-intercept <- 30.96478
-r2 <- 0.277
+intercept <- 24.67428
+slope <- -5.599747e-06
+r2 <- 5.08e-11
   
 data_cond_evolvability_sd <- data.frame(
     log_Conditional_Evolvability_SD = log(results_sd$Conditional_Evolvability_SD),
@@ -647,7 +838,7 @@ p9 <- ggplot(eigen_df, aes(x = Rank, y = log(Prop_variance), group = Species)) +
         geom_point(alpha = 0.4, size = 1) +
         labs(
         x = "Eigenvector rank",
-        y = "Log of the proportion of variance explained"
+        y = "Log prop of variance explained"
         ) +
      theme_classic() +
   theme(
@@ -666,7 +857,7 @@ p10 <- ggplot(eigen_df, aes(x = Rank, y = Prop_variance, group = Species)) +
          geom_point(alpha = 0.4, size = 1) +
        labs(
          x = "Eigenvector rank",
-         y = "Raw proportion of variance explained"
+         y = "Raw prop of variance explained"
        ) +
   theme_classic() +
   theme(

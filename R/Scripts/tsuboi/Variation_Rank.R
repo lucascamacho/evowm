@@ -4,20 +4,22 @@ library(ggplot2)
 library(ape)
 
 # read all species VCV matrices
-setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
-temp = list.files(pattern = "*.csv")
-vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
-names(vcv)  = gsub(".csv", replacement= "", temp)
+#setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
+#temp = list.files(pattern = "*.csv")
+#vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
+#names(vcv)  = gsub(".csv", replacement= "", temp)
+load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/vcv.RData")
 
 # read phylogeny
-filename <- "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
-tree <- read.nexus(filename)
+#filename <- "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
+#tree <- read.nexus(filename)
+load("~/Desktop/Primatrees.RData")
 species <- names(vcv)
 tree <- drop.tip(tree, setdiff(tree$tip.label, species))
 
 # remove vcv which are not in the phylogeny
-vcv <- vcv[!names(vcv) %in% setdiff(names(vcv), tree$tip.label)]
-species <- names(vcv)
+#vcv <- vcv[!names(vcv) %in% setdiff(names(vcv), tree$tip.label)]
+#species <- names(vcv)
 vcv <- lapply(vcv, as.matrix)
 
 # Empty list to store results
