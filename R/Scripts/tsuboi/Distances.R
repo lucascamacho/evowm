@@ -5,6 +5,8 @@ setwd("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/")
 
 library(evolqg)
 library(ape)
+library(ggplot2)
+library(slouch)
 
 zero_first_eigen <- function(mat) {
   eig <- eigen(mat)
@@ -89,4 +91,59 @@ results_g <- data.frame(
 rownames(results_g) <- NULL
 
 # save
-saveRDS(results_g, "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Distances.RDS")
+#saveRDS(results_g, "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Distances.RDS")
+
+# Plot
+df_ou <- data.frame(
+  species = factor(results_g$Species, levels = tree$tip.label),
+  eudist = results_g$EuclideanDistance,
+  geodist = results_g$GeodesicDistance
+)
+
+df_ou <- df_ou[match(tree$tip.label, df_ou$species), ]
+
+alpha_vals <- seq(0.1, 0.9, length.out = 20)
+fit_ou_eu_geo <- slouch.fit(
+  phy = tree,
+  response = df_ou$geodist,
+  species =  df_ou$species,
+  direct.cov = df_ou$eudist,
+  a_values = alpha_vals
+)
+summary(fit_ou_eu_geo)
+
+intercept <- 20.88379
+slope <- 64.48172
+slope_se <- 16.32057
+r2 <- 0.281
+
+label <- sprintf("Slope = %.2f \u00B1 %.2f\nR² = %.3f",
+                 slope, slope_se, r2)
+
+p2 <- ggplot(results_g, aes(x = EuclideanDistance,
+                            y = GeodesicDistance)) +
+  geom_point(size = 3) +
+  geom_abline(intercept = intercept,
+              slope = slope,
+              color = "firebrick",
+              linewidth = 1.2) +
+  annotate("text",
+           x = Inf, y = -Inf,
+           label = label,
+           hjust = 1.05, vjust = -0.5,
+           size = 5) +
+  labs(
+    x = "Euclidean Distance",
+    y = "Geodesic Distance"
+  ) +
+  theme_classic(base_size = 14)
+
+p2
+
+#ggsave(
+#  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Figure2.png",
+#  plot = p2,
+#  width = 12,
+#  height = 7,
+#  dpi = 300
+#)
