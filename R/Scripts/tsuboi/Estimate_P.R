@@ -7,9 +7,14 @@ library(evolqg)
 # load tree
 load("~/Desktop/Primatrees.RData")
 genus <- tree$tip.label
+#filename <- "~/Dropbox/Doc/Data/Primates_Dryad_no_scripts/median_tree.tre.nex"
+#tree <- read.nexus(filename)
 
 # load data
 load("~/Desktop/Primaset_RawData.RData")
+
+species <- names(vcv)
+tree <- drop.tip(tree, setdiff(tree$tip.label, species))
 
 calculate_P_matrices <- function(info, traits) {
   

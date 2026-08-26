@@ -7,6 +7,7 @@ library(evolqg)
 library(ape)
 library(ggplot2)
 library(slouch)
+library(dplyr)
 
 zero_first_eigen <- function(mat) {
   eig <- eigen(mat)
@@ -36,10 +37,10 @@ euclidean_distance <- function(P1, P2){
 }
 
 # read all species VCV matrices
-# setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
-# temp = list.files(pattern = "*.csv")
-# vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
-# names(vcv)  = gsub(".csv", replacement= "", temp)
+#setwd("~/Dropbox/Doc/Code/evowm/R/Outputs/log/")
+#temp = list.files(pattern = "*.csv")
+#vcv = lapply(temp, read.csv, header = TRUE, dec = ".", sep = ' ', row.names = 1)
+#names(vcv)  = gsub(".csv", replacement= "", temp)
 load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/vcv.RData")
 
 # read phylogeny
@@ -52,6 +53,9 @@ tree <- drop.tip(tree, setdiff(tree$tip.label, species))
 # remove vcv which are not in the phylogeny
 #vcv <- vcv[!names(vcv) %in% setdiff(names(vcv), tree$tip.label)]
 #species <- names(vcv)
+
+# read clades information
+clades <- read.csv("~/Desktop/taxonomy.csv")
 
 # get ancestral VCV eigenvectors
 all_cov_matrices <- PhyloW(tree, vcv)
@@ -120,30 +124,47 @@ r2 <- 0.281
 label <- sprintf("Slope = %.2f \u00B1 %.2f\nR² = %.3f",
                  slope, slope_se, r2)
 
-p2 <- ggplot(results_g, aes(x = EuclideanDistance,
-                            y = GeodesicDistance)) +
+p2 <- ggplot(
+  results_g %>%
+    left_join(
+      clades %>%
+        select(GENUS, CLADE) %>%
+        distinct(),
+      by = c("Species" = "GENUS")
+    ),
+  aes(
+    x = EuclideanDistance,
+    y = GeodesicDistance,
+    color = CLADE
+  )
+) +
   geom_point(size = 3) +
-  geom_abline(intercept = intercept,
-              slope = slope,
-              color = "firebrick",
-              linewidth = 1.2) +
-  annotate("text",
-           x = Inf, y = -Inf,
-           label = label,
-           hjust = 1.05, vjust = -0.5,
-           size = 5) +
+  geom_abline(
+    intercept = intercept,
+    slope = slope,
+    color = "firebrick",
+    linewidth = 1.2
+  ) +
+  annotate(
+    "text",
+    x = Inf, y = -Inf,
+    label = label,
+    hjust = 1.05, vjust = -0.5,
+    size = 5
+  ) +
   labs(
     x = "Euclidean Distance",
-    y = "Geodesic Distance"
+    y = "Geodesic Distance",
+    color = "Clade"
   ) +
   theme_classic(base_size = 14)
 
 p2
 
-#ggsave(
-#  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Figure2.png",
-#  plot = p2,
-#  width = 12,
-#  height = 7,
-#  dpi = 300
-#)
+ggsave(
+  "~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Figure2.png",
+  plot = p2,
+  width = 12,
+  height = 7,
+  dpi = 300
+)

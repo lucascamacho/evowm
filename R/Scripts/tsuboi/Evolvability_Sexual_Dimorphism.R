@@ -64,7 +64,7 @@ for(i in seq_along(species)){
   sd <- as.numeric(
     sexual_dimorphism_df[
       sexual_dimorphism_df$Genus == species[i],
-      -(1:3)
+      -(1:2)
     ]
   )
   

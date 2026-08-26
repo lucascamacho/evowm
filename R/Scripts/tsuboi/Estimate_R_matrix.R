@@ -63,7 +63,7 @@ load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/Genus_Means.RData")
 # calculate R
 C <- vcv(tree, corr = FALSE)
 
-X <- as.matrix(genus_means_df[, -1])
+X <- as.matrix(genus_means_df[, -c(1:2)])
 rownames(X) <- genus_means_df$Genus
 
 R <- evol.vcv_fast(tree, X)

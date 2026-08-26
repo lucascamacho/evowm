@@ -7,7 +7,6 @@ setwd("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/")
 load("~/Desktop/Primaset_RawData.RData")
 load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/vcv.RData")
 
-
 # ============================================================
 # Create lists
 # ============================================================
@@ -15,96 +14,156 @@ load("~/Dropbox/Doc/Code/evowm/R/Scripts/tsuboi/vcv.RData")
 sexual_dimorphism <- list()
 genus_means <- list()
 
-
 # ============================================================
 # Loop through genera in VCV
 # ============================================================
 
 for (genus in names(vcv)) {
   
+  # ==========================================================
+  # Get all individuals from this genus
+  # ==========================================================
+  
+  genus_idx <- which(info$GEN == genus)
+  
+  
+  # ==========================================================
+  # GENUS MEAN
+  # ==========================================================
+  
+  # Species present in this genus
+  species <- unique(info$GSP[genus_idx])
+  species <- species[!is.na(species)]
+  
+  
+  # Store species means
+  species_means <- list()
+  
+  
+  for (sp in species) {
+    
+    # Individuals belonging to this species
+    sp_idx <- genus_idx[info$GSP[genus_idx] == sp]
+    
+    sp_traits <- traits[sp_idx, , drop = FALSE]
+    
+    # Species geometric mean
+    # (mean(log(x)) = log(geometric mean))
+    sp_log_gm <- apply(
+      sp_traits,
+      2,
+      function(x) mean(log(x), na.rm = TRUE)
+    )
+    
+    species_means[[sp]] <- sp_log_gm
+  }
+  
+  
+  # Combine species means
+  species_means <- do.call(
+    rbind,
+    species_means
+  )
+  
+  
+  # Mean across species
+  # Every species gets equal weight
+  genus_log_mean <- colMeans(
+    species_means,
+    na.rm = TRUE
+  )
+  
+  
+  genus_means[[genus]] <- data.frame(
+    Genus = genus,
+    N_Species = nrow(species_means),
+    t(genus_log_mean),
+    check.names = FALSE
+  )
+  
   
   # ==========================================================
   # SEXUAL DIMORPHISM
   # ==========================================================
   
-  # Individuals from this genus with known sex
-  idx <- which(
-    info$GEN == genus &
-      info$SEX %in% c("M", "F")
-  )
+  species_SD <- list()
   
   
-  # Separate sexes
-  male_idx <- idx[info$SEX[idx] == "M"]
-  female_idx <- idx[info$SEX[idx] == "F"]
-  
-  
-  # Need both sexes for sexual dimorphism
-  if (length(male_idx) > 0 && length(female_idx) > 0) {
+  for (sp in species) {
     
-    # Skull measurements
-    male_traits <- traits[male_idx, , drop = FALSE]
-    female_traits <- traits[female_idx, , drop = FALSE]
+    # Individuals from this species with known sex
+    sp_idx <- genus_idx[
+      info$GSP[genus_idx] == sp &
+        info$SEX[genus_idx] %in% c("M", "F")
+    ]
     
     
-    # Mean of log-transformed measurements
-    male_log_gm <- apply(
-      male_traits,
-      2,
-      function(x) mean(log(x), na.rm = TRUE)
-    )
-    
-    female_log_gm <- apply(
-      female_traits,
-      2,
-      function(x) mean(log(x), na.rm = TRUE)
-    )
+    # Separate sexes
+    male_idx <- sp_idx[info$SEX[sp_idx] == "M"]
+    female_idx <- sp_idx[info$SEX[sp_idx] == "F"]
     
     
-    # Sexual dimorphism
-    # log(Male GM) - log(Female GM)
-    SD <- male_log_gm - female_log_gm
-    
-    
-    # Save sexual dimorphism
-    sexual_dimorphism[[genus]] <- data.frame(
-      Genus = genus,
-      N_Males = length(male_idx),
-      N_Females = length(female_idx),
-      t(SD),
-      check.names = FALSE
-    )
+    # Need both sexes
+    if (length(male_idx) > 0 && length(female_idx) > 0) {
+      
+      male_traits <- traits[male_idx, , drop = FALSE]
+      female_traits <- traits[female_idx, , drop = FALSE]
+      
+      
+      # Species-level male geometric mean
+      male_log_gm <- apply(
+        male_traits,
+        2,
+        function(x) mean(log(x), na.rm = TRUE)
+      )
+      
+      
+      # Species-level female geometric mean
+      female_log_gm <- apply(
+        female_traits,
+        2,
+        function(x) mean(log(x), na.rm = TRUE)
+      )
+      
+      
+      # Species-level sexual dimorphism
+      SD <- male_log_gm - female_log_gm
+      
+      
+      # Save
+      species_SD[[sp]] <- SD
+    }
   }
   
   
   # ==========================================================
-  # GENUS MEANS
+  # GENUS-LEVEL SEXUAL DIMORPHISM
   # ==========================================================
   
-  # ALL individuals from this genus
-  genus_idx <- which(info$GEN == genus)
-  
-  
-  # Skull measurements for all individuals
-  genus_traits <- traits[genus_idx, , drop = FALSE]
-  
-  
-  # Mean of log-transformed measurements
-  genus_log_means <- apply(
-    genus_traits,
-    2,
-    function(x) mean(log(x), na.rm = TRUE)
-  )
-  
-  
-  # Save genus means
-  genus_means[[genus]] <- data.frame(
-    Genus = genus,
-    t(genus_log_means),
-    check.names = FALSE
-  )
+  if (length(species_SD) > 0) {
+    
+    species_SD <- do.call(
+      rbind,
+      species_SD
+    )
+    
+    
+    # Mean sexual dimorphism across species
+    # Every species gets equal weight
+    genus_SD <- colMeans(
+      species_SD,
+      na.rm = TRUE
+    )
+    
+    
+    sexual_dimorphism[[genus]] <- data.frame(
+      Genus = genus,
+      N_Species = nrow(species_SD),
+      t(genus_SD),
+      check.names = FALSE
+    )
+  }
 }
-
 
 # ============================================================
 # Combine sexual dimorphism data
@@ -128,7 +187,6 @@ genus_means_df <- do.call(
 )
 
 rownames(genus_means_df) <- NULL
-
 
 # ============================================================
 # Save files
